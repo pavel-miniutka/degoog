@@ -1,12 +1,8 @@
 services:
   degoog:
-    build:
-      context: .
-      network: host
+    image: ghcr.io/fccview/degoog:main
     volumes:
       - ./data:/data
     ports:
-      - "4455:4444"
-    environment:
-      - PORT=4444
+      - "4444:4444"
     restart: unless-stopped
