@@ -13,7 +13,7 @@ services:
   degoog:
     image: ghcr.io/fccview/degoog:main
     volumes:
-      - ./data:/data
+      - ./data:/app/data
     user: "1000:1000"
     ports:
       - "4444:4444"

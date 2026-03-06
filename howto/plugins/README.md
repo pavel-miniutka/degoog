@@ -62,3 +62,4 @@ The plugin id is derived from the filename with a `plugin-` prefix (e.g. `my-plu
 4. Implement `isConfigured()` to return `false` when required settings are missing — this hides the command from `!help` until it is ready.
 
 See `example.js` in this folder for a complete working example.
+See [data/plugins/weather.js](data/plugins/weather.js) for a fully working drop in weather plugin.
