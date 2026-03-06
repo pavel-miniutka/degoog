@@ -1,7 +1,7 @@
 import { readdir, readFile, mkdir } from "fs/promises";
 import { join } from "path";
 import * as sass from "sass";
-import { getSettings, setSettings, maskSecrets, mergeSecrets } from "../plugin-settings";
+import { getSettings, setSettings, maskSecrets } from "../plugin-settings";
 import { debug } from "../logger";
 import type { SettingField, ExtensionMeta } from "../types";
 
@@ -39,7 +39,9 @@ function settingsId(themeId: string): string {
   return `theme-${themeId}`;
 }
 
-async function compileThemeCss(theme: LoadedTheme): Promise<string | undefined> {
+async function compileThemeCss(
+  theme: LoadedTheme,
+): Promise<string | undefined> {
   const cssFile = theme.manifest.css;
   if (!cssFile) return undefined;
 
@@ -169,7 +171,8 @@ export async function getThemeExtensionMeta(): Promise<ExtensionMeta[]> {
 
   for (const theme of themes) {
     const schema = theme.manifest.settingsSchema ?? [];
-    const rawSettings = schema.length > 0 ? await getSettings(settingsId(theme.id)) : {};
+    const rawSettings =
+      schema.length > 0 ? await getSettings(settingsId(theme.id)) : {};
     const maskedSettings = maskSecrets(rawSettings, schema);
 
     results.push({

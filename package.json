@@ -13,11 +13,11 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0",
-    "hono": "^4.7.0"
+    "hono": "^4.7.0",
+    "sass": "^1.85.0"
   },
   "devDependencies": {
     "@types/bun": "^1.2.0",
-    "sass": "^1.85.0",
     "typescript": "^5.7.0"
   }
 }
