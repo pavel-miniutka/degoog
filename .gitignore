@@ -3,3 +3,6 @@ data/plugin-settings.json
 docker-compose.test.yml
 node_modules/
 src/public/style.css
+data/repos.json
+data/store
+fccview-degoog-extensions
