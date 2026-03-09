@@ -324,7 +324,7 @@ export async function getPluginExtensionMeta(): Promise<ExtensionMeta[]> {
       settingsSchema: schema,
       settings: maskedSettings,
     };
-    const inst = entry.instance as Record<string, unknown>;
+    const inst = entry.instance as unknown as Record<string, unknown>;
     if (Array.isArray(inst.defaultFeedUrls)) {
       meta.defaultFeedUrls = inst.defaultFeedUrls as string[];
     }
