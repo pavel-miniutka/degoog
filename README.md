@@ -54,7 +54,7 @@ Official fccview store: `https://github.com/fccview/fccview-degoog-extensions`
 
 ## Documentation
 
-Full customisation guide (plugins, themes, engines, store, settings gate, aliases, env): **[https://fccview.github.io/degoog](documentation)**.
+Full customisation guide (plugins, themes, engines, store, settings gate, aliases, env): **[documentation](https://fccview.github.io/degoog)**.
 
 ## Little shoutout
 
