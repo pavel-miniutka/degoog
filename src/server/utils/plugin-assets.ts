@@ -40,6 +40,8 @@ export function getPluginScriptFolders(): string[] {
   return Array.from(scriptFolderSource.keys());
 }
 
-export function getScriptFolderSource(folder: string): "plugin" | "builtin" | null {
+export function getScriptFolderSource(
+  folder: string,
+): "plugin" | "builtin" | null {
   return scriptFolderSource.get(folder) ?? null;
 }

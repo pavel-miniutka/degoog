@@ -48,6 +48,10 @@ services:
   </a>
 </p>
 
+## Public instances
+
+Some amazing people around the web decided to make their degoog instances available for everyone to use, and they 100% deserve a shout-out! Check out the full list [here](docs/repo/PUBLIC_INSTANCES.md)
+
 ## Store repositories
 
 Official fccview store: `https://github.com/fccview/fccview-degoog-extensions`

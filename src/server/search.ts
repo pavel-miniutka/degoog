@@ -14,11 +14,12 @@ import {
   getActiveWebEngines,
   getEnginesForSearchType,
 } from "./extensions/engines/registry";
-import { outgoingFetch } from "./outgoing";
+import { outgoingFetch } from "./utils/outgoing";
 
 const MAX_PAGE = 10;
 const ENGINE_TIMEOUT_MS = 10_000;
-function normalizeUrl(url: string): string {
+
+const _normalizeUrl = (url: string): string => {
   try {
     const parsed = new URL(url);
     parsed.hash = "";
@@ -29,15 +30,15 @@ function normalizeUrl(url: string): string {
   } catch {
     return url;
   }
-}
+};
 
-function mergeIntoMap(
+const _mergeIntoMap = (
   urlMap: Map<string, ScoredResult>,
   results: SearchResult[],
-): void {
+): void => {
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
-    const normalized = normalizeUrl(r.url);
+    const normalized = _normalizeUrl(r.url);
     const positionScore = Math.max(10 - i, 1);
 
     if (urlMap.has(normalized)) {
@@ -61,54 +62,35 @@ function mergeIntoMap(
       });
     }
   }
-}
+};
 
-function sortedFromMap(urlMap: Map<string, ScoredResult>): ScoredResult[] {
+const _sortedFromMap = (urlMap: Map<string, ScoredResult>): ScoredResult[] => {
   const scored = Array.from(urlMap.values());
   scored.sort((a, b) => b.score - a.score);
   return scored;
-}
+};
 
-export function aggregateAndScore(
-  allResults: SearchResult[][],
-): ScoredResult[] {
-  const urlMap = new Map<string, ScoredResult>();
-  for (const engineResults of allResults) {
-    mergeIntoMap(urlMap, engineResults);
-  }
-  return sortedFromMap(urlMap);
-}
-
-export function mergeNewResults(
-  existing: ScoredResult[],
-  newResults: SearchResult[],
-): ScoredResult[] {
-  const urlMap = new Map<string, ScoredResult>();
-  for (const r of existing) {
-    urlMap.set(normalizeUrl(r.url), { ...r, sources: [...r.sources] });
-  }
-  mergeIntoMap(urlMap, newResults);
-  return sortedFromMap(urlMap);
-}
-
-async function fetchRelatedSearches(query: string): Promise<string[]> {
+const _fetchRelatedSearches = async (query: string): Promise<string[]> => {
   try {
     const res = await fetch(
       `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`,
     );
     const buf = await res.arrayBuffer();
-    const data = JSON.parse(new TextDecoder("iso-8859-1").decode(buf)) as [string, string[]];
+    const data = JSON.parse(new TextDecoder("iso-8859-1").decode(buf)) as [
+      string,
+      string[],
+    ];
     return (data[1] || [])
       .filter((s: string) => s.toLowerCase() !== query.toLowerCase())
       .slice(0, 8);
   } catch {
     return [];
   }
-}
+};
 
-async function fetchKnowledgePanel(
+const _fetchKnowledgePanel = async (
   query: string,
-): Promise<KnowledgePanel | null> {
+): Promise<KnowledgePanel | null> => {
   try {
     const params = new URLSearchParams({
       action: "query",
@@ -161,32 +143,54 @@ async function fetchKnowledgePanel(
   } catch {
     return null;
   }
-}
+};
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+const _withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
   return Promise.race([
     promise,
     new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("Engine timeout")), ms),
     ),
   ]);
-}
+};
 
-export function resolveEngine(engineName: string): SearchEngine | null {
+export const aggregateAndScore = (
+  allResults: SearchResult[][],
+): ScoredResult[] => {
+  const urlMap = new Map<string, ScoredResult>();
+  for (const engineResults of allResults) {
+    _mergeIntoMap(urlMap, engineResults);
+  }
+  return _sortedFromMap(urlMap);
+};
+
+export const mergeNewResults = (
+  existing: ScoredResult[],
+  newResults: SearchResult[],
+): ScoredResult[] => {
+  const urlMap = new Map<string, ScoredResult>();
+  for (const r of existing) {
+    urlMap.set(_normalizeUrl(r.url), { ...r, sources: [...r.sources] });
+  }
+  _mergeIntoMap(urlMap, newResults);
+  return _sortedFromMap(urlMap);
+};
+
+export const resolveEngine = (engineName: string): SearchEngine | null => {
   const engineMap = getEngineMap();
   if (engineMap[engineName]) return engineMap[engineName];
   for (const engine of Object.values(engineMap)) {
     if (engine.name === engineName) return engine;
   }
   return null;
-}
+};
 
-export async function searchSingleEngine(
+export const searchSingleEngine = async (
   engineName: string,
   query: string,
   page: number = 1,
   timeFilter: TimeFilter = "any",
-): Promise<{ results: SearchResult[]; timing: EngineTiming }> {
+): Promise<{ results: SearchResult[]; timing: EngineTiming }> => {
   const engine = resolveEngine(engineName);
   if (!engine) {
     return {
@@ -198,7 +202,7 @@ export async function searchSingleEngine(
   const t0 = performance.now();
   const engineContext = { fetch: outgoingFetch };
   try {
-    const results = await withTimeout(
+    const results = await _withTimeout(
       engine.executeSearch(query, p, timeFilter, engineContext),
       ENGINE_TIMEOUT_MS,
     );
@@ -214,15 +218,15 @@ export async function searchSingleEngine(
       timing: { name: engine.name, time: elapsed, resultCount: 0 },
     };
   }
-}
+};
 
-export async function search(
+export const search = async (
   query: string,
   config: EngineConfig,
   type: SearchType = "all",
   page: number = 1,
   timeFilter: TimeFilter = "any",
-): Promise<SearchResponse> {
+): Promise<SearchResponse> => {
   const start = performance.now();
   const p = Math.max(1, Math.min(MAX_PAGE, Math.floor(page) || 1));
 
@@ -250,7 +254,7 @@ export async function search(
   const settled = await Promise.allSettled(
     activeEngines.map(async (engine, i) => {
       engineStarts[i] = performance.now();
-      const results = await withTimeout(
+      const results = await _withTimeout(
         engine.executeSearch(query, p, timeFilter, engineContext),
         ENGINE_TIMEOUT_MS,
       );
@@ -289,10 +293,10 @@ export async function search(
 
   if (type === "all" && p === 1) {
     [relatedSearches, knowledgePanel] = await Promise.all([
-      withTimeout(fetchRelatedSearches(query), ENGINE_TIMEOUT_MS).catch(
+      _withTimeout(_fetchRelatedSearches(query), ENGINE_TIMEOUT_MS).catch(
         () => [],
       ),
-      withTimeout(fetchKnowledgePanel(query), ENGINE_TIMEOUT_MS).catch(
+      _withTimeout(_fetchKnowledgePanel(query), ENGINE_TIMEOUT_MS).catch(
         () => null,
       ),
     ]);
@@ -310,4 +314,4 @@ export async function search(
     relatedSearches,
     knowledgePanel,
   };
-}
+};

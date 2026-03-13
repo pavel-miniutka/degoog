@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { getSettings } from "../plugin-settings";
+import { getSettings } from "../utils/plugin-settings";
 import { getClientIp } from "../utils/request";
-import { checkRateLimit } from "../rate-limit";
+import { checkRateLimit } from "../utils/rate-limit";
 
 const DEGOOG_SETTINGS_ID = "degoog-settings";
 const router = new Hono();

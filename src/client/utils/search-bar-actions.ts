@@ -1,10 +1,13 @@
-import { escapeHtml } from "../utils/dom";
-import { performSearch } from "./search";
+import { escapeHtml } from "./dom";
+import { performSearch } from "./search-actions";
 import type { SearchBarAction } from "../types";
 
 const SEARCH_BAR_ACTION_EVENT = "search-bar-action";
 
-const _renderActionButton = (action: SearchBarAction, inputId: string): HTMLButtonElement => {
+const _renderActionButton = (
+  action: SearchBarAction,
+  inputId: string,
+): HTMLButtonElement => {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "search-bar-action-btn";
@@ -12,7 +15,8 @@ const _renderActionButton = (action: SearchBarAction, inputId: string): HTMLButt
   btn.dataset.actionType = action.type;
   btn.dataset.inputId = inputId;
   if (action.type === "navigate" && action.url) btn.dataset.url = action.url;
-  if (action.type === "bang" && action.trigger) btn.dataset.trigger = action.trigger;
+  if (action.type === "bang" && action.trigger)
+    btn.dataset.trigger = action.trigger;
   if (action.icon) {
     const img = document.createElement("img");
     img.src = escapeHtml(action.icon);
@@ -28,10 +32,14 @@ const _renderActionButton = (action: SearchBarAction, inputId: string): HTMLButt
 };
 
 function _handleActionClick(e: MouseEvent): void {
-  const btn = (e.target as HTMLElement).closest<HTMLElement>(".search-bar-action-btn");
+  const btn = (e.target as HTMLElement).closest<HTMLElement>(
+    ".search-bar-action-btn",
+  );
   if (!btn) return;
   const { actionId, actionType, inputId } = btn.dataset;
-  const input = inputId ? (document.getElementById(inputId) as HTMLInputElement | null) : null;
+  const input = inputId
+    ? (document.getElementById(inputId) as HTMLInputElement | null)
+    : null;
 
   if (actionType === "navigate") {
     const url = btn.dataset.url;
@@ -62,7 +70,9 @@ function _handleActionClick(e: MouseEvent): void {
 }
 
 export function initSearchBarActions(): void {
-  const containers = document.querySelectorAll<HTMLElement>(".search-bar-actions");
+  const containers = document.querySelectorAll<HTMLElement>(
+    ".search-bar-actions",
+  );
   if (!containers.length) return;
   const homeInputId = "search-input";
   const resultsInputId = "results-search-input";
@@ -73,7 +83,9 @@ export function initSearchBarActions(): void {
       containers.forEach((container) => {
         container.innerHTML = "";
         const inputId =
-          container.id === "search-bar-actions-results" ? resultsInputId : homeInputId;
+          container.id === "search-bar-actions-results"
+            ? resultsInputId
+            : homeInputId;
         actions.forEach((action) => {
           container.appendChild(_renderActionButton(action, inputId));
         });

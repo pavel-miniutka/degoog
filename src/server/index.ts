@@ -4,7 +4,7 @@ import {
   initEngines,
   getOutgoingAllowlist,
 } from "./extensions/engines/registry";
-import { setOutgoingAllowlist } from "./outgoing";
+import { setOutgoingAllowlist } from "./utils/outgoing";
 import { initPlugins } from "./extensions/commands/registry";
 import { initSlotPlugins } from "./extensions/slots/registry";
 import { initSearchResultTabs } from "./extensions/search-result-tabs/registry";

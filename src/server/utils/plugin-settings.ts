@@ -1,9 +1,8 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
-import { join, dirname } from "path";
+import { dirname } from "path";
+import { pluginSettingsFile } from "./paths";
 
-const SETTINGS_PATH =
-  process.env.DEGOOG_PLUGIN_SETTINGS_FILE ??
-  join(process.cwd(), "data", "plugin-settings.json");
+const SETTINGS_PATH = pluginSettingsFile();
 
 export type SettingValue = string | string[];
 
@@ -42,7 +41,9 @@ async function persist(store: PluginSettingsStore): Promise<void> {
   await writeFile(SETTINGS_PATH, JSON.stringify(store, null, 2), "utf-8");
 }
 
-export async function getSettings(id: string): Promise<Record<string, SettingValue>> {
+export async function getSettings(
+  id: string,
+): Promise<Record<string, SettingValue>> {
   const store = await load();
   return store[id] ?? {};
 }

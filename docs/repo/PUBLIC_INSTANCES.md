@@ -1,0 +1,9 @@
+# degoog public instances
+
+Some amazing people around the web decided to make their degoog instances available for everyone to use, and they 100% deserve a shout-out!
+
+## First ever public instance
+
+[https://mirnir.com/](https://mirnir.com/)
+
+[https://nepnir.com](https://nepnir.com) (Zen)

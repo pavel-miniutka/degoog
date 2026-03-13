@@ -1,7 +1,7 @@
-import { escapeHtml } from "../utils/dom";
-import { proxyImageUrl } from "../utils/url";
-import { retryEngine } from "../modules/search";
-import type { SearchResponse } from "../types";
+import { escapeHtml } from "../../utils/dom";
+import { proxyImageUrl } from "../../utils/url";
+import { retryEngine } from "../../utils/search-actions";
+import type { SearchResponse } from "../../types";
 
 const _sidebarAccordion = (title: string, content: string): string =>
   `<div class="sidebar-panel sidebar-accordion">

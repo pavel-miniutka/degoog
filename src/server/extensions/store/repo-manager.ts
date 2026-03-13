@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir, readdir, stat, rm } from "fs/promises";
 import { join, resolve, dirname, relative } from "path";
 import { createHash } from "crypto";
-import { removeSettings } from "../../plugin-settings";
+import { removeSettings } from "../../utils/plugin-settings";
 import { reloadCommands } from "../commands/registry";
 import { reloadSlotPlugins } from "../slots/registry";
 import { reloadSearchResultTabs } from "../search-result-tabs/registry";
@@ -18,6 +18,7 @@ import type {
   RepoPackageJson,
   AuthorJson,
 } from "./types";
+import { pluginsDir, themesDir, enginesDir } from "../../utils/paths";
 
 const CLONE_TIMEOUT_MS = 60_000;
 const OFFICIAL_REPO_URL =
@@ -416,12 +417,9 @@ export async function listRepoItems(repoUrl?: string): Promise<StoreItem[]> {
 }
 
 function getDestDir(type: "plugin" | "theme" | "engine"): string {
-  const dataDir = getDataDir();
-  if (type === "plugin")
-    return process.env.DEGOOG_PLUGINS_DIR ?? join(dataDir, "plugins");
-  if (type === "theme")
-    return process.env.DEGOOG_THEMES_DIR ?? join(dataDir, "themes");
-  return process.env.DEGOOG_ENGINES_DIR ?? join(dataDir, "engines");
+  if (type === "plugin") return pluginsDir();
+  if (type === "theme") return themesDir();
+  return enginesDir();
 }
 
 const STORE_METADATA = ["author.json", "screenshots"];
@@ -447,9 +445,18 @@ async function copyItemDir(
   }
 }
 
-function _parseDependencyUrl(depUrl: string): { repoUrl: string; type: "plugin" | "theme" | "engine"; itemPath: string } | null {
+function _parseDependencyUrl(
+  depUrl: string,
+): {
+  repoUrl: string;
+  type: "plugin" | "theme" | "engine";
+  itemPath: string;
+} | null {
   const cleaned = depUrl.replace(/\.git(\/|$)/, "/").replace(/\/$/, "");
-  const typePatterns: Array<{ type: "plugin" | "theme" | "engine"; pattern: RegExp }> = [
+  const typePatterns: Array<{
+    type: "plugin" | "theme" | "engine";
+    pattern: RegExp;
+  }> = [
     { type: "plugin", pattern: /^(.+?)\/(plugins\/[^/]+)$/ },
     { type: "theme", pattern: /^(.+?)\/(themes\/[^/]+)$/ },
     { type: "engine", pattern: /^(.+?)\/(engines\/[^/]+)$/ },

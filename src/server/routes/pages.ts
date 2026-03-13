@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import * as cache from "../cache";
+import * as cache from "../utils/cache";
 import {
   getEngineRegistry,
   getDefaultEngineConfig,
@@ -9,10 +9,10 @@ import {
   getActiveTheme,
   getActiveThemeDataAttrs,
 } from "../extensions/themes/registry";
-import { getAllPluginCss, getPluginScriptFolders, getPluginSettingsIds } from "../plugin-assets";
-import { getSettings } from "../plugin-settings";
+import { getAllPluginCss, getPluginScriptFolders, getPluginSettingsIds } from "../utils/plugin-assets";
+import { getSettings } from "../utils/plugin-settings";
 import { shouldServeSettingsGate, getSettingsTokenFromRequest, validateSettingsToken } from "./settings-auth";
-import { isPublicInstance } from "../public-instance";
+import { isPublicInstance } from "../utils/public-instance";
 import pkg from "../../../package.json";
 
 const router = new Hono();
@@ -55,14 +55,18 @@ async function pluginAssetsPlaceholder(): Promise<string> {
   return parts.join("\n  ");
 }
 
-async function buildPage(filename: string): Promise<string> {
-  const html = await Bun.file(`src/public/${filename}`).text();
+async function applyPagePlaceholders(html: string): Promise<string> {
   const themeAttrs = await getActiveThemeDataAttrs();
   return html
     .replaceAll("__APP_VERSION__", pkg.version)
     .replace("__THEME_CSS__", themeCssPlaceholder())
     .replace("__THEME_ATTRS__", themeAttrs)
     .replace("__PLUGIN_ASSETS__", await pluginAssetsPlaceholder());
+}
+
+async function buildPage(filename: string): Promise<string> {
+  const html = await Bun.file(`src/public/${filename}`).text();
+  return applyPagePlaceholders(html);
 }
 
 router.get("/", async (c) => {
@@ -73,7 +77,7 @@ router.get("/", async (c) => {
   }
   const override = await getThemeHtml("index");
   if (override) {
-    return c.html(override.replaceAll("__APP_VERSION__", pkg.version));
+    return c.html(await applyPagePlaceholders(override));
   }
   return c.html(await buildPage("index.html"));
 });
@@ -81,7 +85,7 @@ router.get("/", async (c) => {
 router.get("/search", async (c) => {
   const override = await getThemeHtml("search");
   if (override)
-    return c.html(override.replaceAll("__APP_VERSION__", pkg.version));
+    return c.html(await applyPagePlaceholders(override));
   return c.html(await buildPage("search.html"));
 });
 

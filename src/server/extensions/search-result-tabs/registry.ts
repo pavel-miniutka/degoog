@@ -1,8 +1,12 @@
 import { join } from "path";
 import type { SearchResultTab, PluginContext } from "../../types";
-import { getSettings } from "../../plugin-settings";
-import { addPluginCss, registerPluginScript, registerPluginSettingsId } from "../../plugin-assets";
-import { debug } from "../../logger";
+import { getSettings } from "../../utils/plugin-settings";
+import {
+  addPluginCss,
+  registerPluginScript,
+  registerPluginSettingsId,
+} from "../../utils/plugin-assets";
+import { debug } from "../../utils/logger";
 
 let tabPlugins: SearchResultTab[] = [];
 
@@ -11,11 +15,15 @@ function isSearchResultTab(val: unknown): val is SearchResultTab {
   const t = val as SearchResultTab;
   if (typeof t.id !== "string" || typeof t.name !== "string") return false;
   const hasExecute = typeof t.executeSearch === "function";
-  const hasEngineType = typeof t.engineType === "string" && t.engineType.trim() !== "";
+  const hasEngineType =
+    typeof t.engineType === "string" && t.engineType.trim() !== "";
   return hasExecute || hasEngineType;
 }
 
-async function loadTabsFromRoot(rootDir: string, source: "plugin" | "builtin"): Promise<void> {
+async function loadTabsFromRoot(
+  rootDir: string,
+  source: "plugin" | "builtin",
+): Promise<void> {
   const { readdir, readFile, stat } = await import("fs/promises");
   const { pathToFileURL } = await import("url");
   let entries: string[];
@@ -47,18 +55,27 @@ async function loadTabsFromRoot(rootDir: string, source: "plugin" | "builtin"): 
       if (!tab || !isSearchResultTab(tab)) continue;
 
       const tabSettingsId = tab.settingsId ?? `tab-${tab.id}`;
-      const template = await readFile(join(entryPath, "template.html"), "utf-8").catch(() => "");
-      const css = await readFile(join(entryPath, "style.css"), "utf-8").catch(() => "");
+      const template = await readFile(
+        join(entryPath, "template.html"),
+        "utf-8",
+      ).catch(() => "");
+      const css = await readFile(join(entryPath, "style.css"), "utf-8").catch(
+        () => "",
+      );
       if (css) addPluginCss(tabSettingsId, css);
-      const hasScript = await stat(join(entryPath, "script.js")).catch(() => null);
-      if (hasScript?.isFile()) registerPluginScript(entry, source, tabSettingsId);
+      const hasScript = await stat(join(entryPath, "script.js")).catch(
+        () => null,
+      );
+      if (hasScript?.isFile())
+        registerPluginScript(entry, source, tabSettingsId);
       registerPluginSettingsId(entry, tabSettingsId);
 
       if (tab.init) {
         const ctx: PluginContext = {
           dir: entryPath,
           template,
-          readFile: (filename: string) => readFile(join(entryPath, filename), "utf-8"),
+          readFile: (filename: string) =>
+            readFile(join(entryPath, filename), "utf-8"),
         };
         await Promise.resolve(tab.init(ctx));
       }
@@ -68,7 +85,11 @@ async function loadTabsFromRoot(rootDir: string, source: "plugin" | "builtin"): 
           const stored = await getSettings(tabSettingsId);
           if (Object.keys(stored).length > 0) tab.configure(stored);
         } catch (err) {
-          debug("search-result-tabs", `Failed to configure tab plugin: ${tab.id}`, err);
+          debug(
+            "search-result-tabs",
+            `Failed to configure tab plugin: ${tab.id}`,
+            err,
+          );
         }
       }
       tabPlugins.push(tab);
@@ -79,7 +100,8 @@ async function loadTabsFromRoot(rootDir: string, source: "plugin" | "builtin"): 
 }
 
 export async function initSearchResultTabs(): Promise<void> {
-  const pluginDir = process.env.DEGOOG_PLUGINS_DIR ?? join(process.cwd(), "data", "plugins");
+  const { pluginsDir } = await import("../../utils/paths");
+  const pluginDir = pluginsDir();
   tabPlugins = [];
   await loadTabsFromRoot(pluginDir, "plugin");
 }

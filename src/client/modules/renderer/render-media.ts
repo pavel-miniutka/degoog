@@ -1,8 +1,8 @@
-import { state } from "../state";
-import { escapeHtml, cleanHostname } from "../utils/dom";
-import { proxyImageUrl } from "../utils/url";
-import { openMediaPreview, registerAppendMediaCards } from "./media";
-import type { ScoredResult } from "../types";
+import { state } from "../../state";
+import { escapeHtml, cleanHostname } from "../../utils/dom";
+import { proxyImageUrl } from "../../utils/url";
+import { openMediaPreview, registerAppendMediaCards } from "../media/media";
+import type { ScoredResult } from "../../types";
 
 const _getImageColumnCount = (): number => {
   const w = window.innerWidth;
@@ -32,7 +32,9 @@ function _ensureImageColumns(grid: HTMLElement): void {
     grid.appendChild(col);
   }
 
-  const columns = Array.from(grid.querySelectorAll<HTMLElement>(".image-column"));
+  const columns = Array.from(
+    grid.querySelectorAll<HTMLElement>(".image-column"),
+  );
   cards.forEach((card) => {
     _shortestColumn(columns).appendChild(card);
   });
@@ -61,7 +63,9 @@ export function appendMediaCards(
 
   if (type === "image") {
     _ensureImageColumns(grid);
-    const columns = Array.from(grid.querySelectorAll<HTMLElement>(".image-column"));
+    const columns = Array.from(
+      grid.querySelectorAll<HTMLElement>(".image-column"),
+    );
 
     results.forEach((r, i) => {
       const idx = startIdx + i;
@@ -116,19 +120,27 @@ export function appendMediaCards(
 
 registerAppendMediaCards(appendMediaCards);
 
-export function renderImageGrid(results: ScoredResult[], container: HTMLElement): void {
+export function renderImageGrid(
+  results: ScoredResult[],
+  container: HTMLElement,
+): void {
   let grid = container.querySelector<HTMLElement>(".image-grid");
   if (!grid) {
-    container.innerHTML = '<div class="image-grid"></div><div class="media-scroll-sentinel"></div>';
+    container.innerHTML =
+      '<div class="image-grid"></div><div class="media-scroll-sentinel"></div>';
     grid = container.querySelector<HTMLElement>(".image-grid")!;
   }
   appendMediaCards(grid, results, "image");
 }
 
-export function renderVideoGrid(results: ScoredResult[], container: HTMLElement): void {
+export function renderVideoGrid(
+  results: ScoredResult[],
+  container: HTMLElement,
+): void {
   let grid = container.querySelector<HTMLElement>(".video-grid");
   if (!grid) {
-    container.innerHTML = '<div class="video-grid"></div><div class="media-scroll-sentinel"></div>';
+    container.innerHTML =
+      '<div class="video-grid"></div><div class="media-scroll-sentinel"></div>';
     grid = container.querySelector<HTMLElement>(".video-grid")!;
   }
   appendMediaCards(grid, results, "video");

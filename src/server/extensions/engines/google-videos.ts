@@ -5,12 +5,16 @@ import type {
   TimeFilter,
   EngineContext,
 } from "../../types";
+import { getRandomGsaAgent } from "../../utils/user-agents";
+import {
+  resolveGoogleTbs,
+  resolveGoogleHref,
+} from "../../utils/google-helpers";
 
-const GSA_USER_AGENTS = [
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/399.2.845414227 Mobile/15E148 Safari/604.1",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/406.0.862495628 Mobile/15E148 Safari/604.1",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/406.0.862495628 Mobile/15E148 Safari/604.1",
-];
+const _ytThumbnail = (href: string): string => {
+  const match = href.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
+  return match ? `https://i.ytimg.com/vi/${match[1]}/mqdefault.jpg` : "";
+};
 
 export class GoogleVideosEngine implements SearchEngine {
   name = "Google Videos";
@@ -33,25 +37,15 @@ export class GoogleVideosEngine implements SearchEngine {
       filter: "0",
     });
 
-    if (timeFilter && timeFilter !== "any") {
-      const tbsMap: Record<string, string> = {
-        hour: "qdr:h",
-        day: "qdr:d",
-        week: "qdr:w",
-        month: "qdr:m",
-        year: "qdr:y",
-      };
-      if (tbsMap[timeFilter]) params.set("tbs", tbsMap[timeFilter]);
-    }
+    const tbs = resolveGoogleTbs(timeFilter);
+    if (tbs) params.set("tbs", tbs);
 
-    const ua =
-      GSA_USER_AGENTS[Math.floor(Math.random() * GSA_USER_AGENTS.length)];
     const doFetch = context?.fetch ?? fetch;
     const response = await doFetch(
       `https://www.google.com/search?${params.toString()}`,
       {
         headers: {
-          "User-Agent": ua,
+          "User-Agent": getRandomGsaAgent(),
           Accept:
             "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           "Accept-Language": "en-US,en;q=0.9",
@@ -71,36 +65,17 @@ export class GoogleVideosEngine implements SearchEngine {
       const durationEl = $(el).find(".ieBN4d").first();
 
       const title = titleEl.text().trim();
-      let href = titleEl.attr("href") || "";
-
-      if (href.startsWith("/url?")) {
-        try {
-          const parsed = new URL(href, "https://www.google.com");
-          href = decodeURIComponent(
-            parsed.searchParams.get("q") ||
-              parsed.searchParams.get("url") ||
-              href,
-          );
-        } catch {}
-      }
+      const href = resolveGoogleHref(titleEl.attr("href") || "");
 
       if (!title || !href || !href.startsWith("http") || seen.has(href)) return;
       seen.add(href);
-
-      let thumbnail = "";
-      const vidMatch = href.match(
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/,
-      );
-      if (vidMatch) {
-        thumbnail = `https://i.ytimg.com/vi/${vidMatch[1]}/mqdefault.jpg`;
-      }
 
       results.push({
         title,
         url: href,
         snippet: "",
         source: this.name,
-        thumbnail,
+        thumbnail: _ytThumbnail(href),
         duration: durationEl.text().trim(),
       });
     });
@@ -113,17 +88,7 @@ export class GoogleVideosEngine implements SearchEngine {
         const durationEl = $(el).find(".k1U36b").first();
 
         const title = titleEl.text().trim();
-        let href = linkEl.attr("href") || "";
-
-        if (href.startsWith("/url?")) {
-          try {
-            const parsed = new URL(href, "https://www.google.com");
-            href =
-              parsed.searchParams.get("q") ||
-              parsed.searchParams.get("url") ||
-              href;
-          } catch {}
-        }
+        const href = resolveGoogleHref(linkEl.attr("href") || "");
 
         if (
           !title ||
@@ -133,20 +98,12 @@ export class GoogleVideosEngine implements SearchEngine {
         )
           return;
 
-        let thumbnail = "";
-        const vidMatch = href.match(
-          /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/,
-        );
-        if (vidMatch) {
-          thumbnail = `https://i.ytimg.com/vi/${vidMatch[1]}/mqdefault.jpg`;
-        }
-
         results.push({
           title,
           url: href,
           snippet: descEl.text().trim(),
           source: this.name,
-          thumbnail,
+          thumbnail: _ytThumbnail(href),
           duration: durationEl.text().trim(),
         });
       });

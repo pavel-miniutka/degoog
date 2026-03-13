@@ -1,5 +1,5 @@
 import { state } from "../state";
-import { performSearch } from "../modules/search";
+import { performSearch } from "./search-actions";
 
 const TIME_LABELS: Record<string, string> = {
   any: "Any time",

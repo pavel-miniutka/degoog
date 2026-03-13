@@ -1,7 +1,7 @@
 import { idbGet, idbSet } from "../utils/db";
 import { SETTINGS_KEY } from "../constants";
 import { escapeHtml, isConfigured } from "../utils/dom";
-import { openModal } from "../modules/modal/modal";
+import { openModal } from "../modules/modals/settings-modal/modal";
 import type { ExtensionMeta, EngineRecord, AllExtensions } from "../types";
 
 const SEARCH_TYPE_LABELS: Record<string, string> = {
@@ -11,11 +11,14 @@ const SEARCH_TYPE_LABELS: Record<string, string> = {
   news: "News",
 };
 
-const _groupByType = (engines: ExtensionMeta[]): Record<string, ExtensionMeta[]> => {
+const _groupByType = (
+  engines: ExtensionMeta[],
+): Record<string, ExtensionMeta[]> => {
   const groups: Record<string, ExtensionMeta[]> = {};
   for (const engine of engines) {
     const type = engine.description.split(" ")[0].toLowerCase();
-    const label = SEARCH_TYPE_LABELS[type] || type.charAt(0).toUpperCase() + type.slice(1);
+    const label =
+      SEARCH_TYPE_LABELS[type] || type.charAt(0).toUpperCase() + type.slice(1);
     if (!groups[label]) groups[label] = [];
     groups[label].push(engine);
   }
@@ -28,7 +31,8 @@ const _renderEngineCard = (
   allowConfigure: boolean,
 ): string => {
   const isEnabled = enabledMap[engine.id] !== false;
-  const configured = allowConfigure && engine.configurable && isConfigured(engine);
+  const configured =
+    allowConfigure && engine.configurable && isConfigured(engine);
   const badge = configured ? `<span class="ext-configured-badge"></span>` : "";
   const configureBtn =
     allowConfigure && engine.configurable
@@ -65,7 +69,10 @@ export async function initEnginesTab(
   const defaultsFromEngines = Object.fromEntries(
     allExtensions.engines.map((e) => [e.id, e.defaultEnabled !== false]),
   );
-  const enabledMap: EngineRecord = { ...defaultsFromEngines, ...savedEnginesMap };
+  const enabledMap: EngineRecord = {
+    ...defaultsFromEngines,
+    ...savedEnginesMap,
+  };
 
   const groups = _groupByType(allExtensions.engines);
   let html = "";
@@ -78,21 +85,25 @@ export async function initEnginesTab(
   }
   container.innerHTML = html;
 
-  container.querySelectorAll<HTMLInputElement>(".engine-toggle-input").forEach((input) => {
-    input.addEventListener("change", async () => {
-      const id = input.dataset.id;
-      if (id) enabledMap[id] = input.checked;
-      await idbSet(SETTINGS_KEY, enabledMap);
-    });
-  });
-
-  if (allowConfigure) {
-    container.querySelectorAll<HTMLElement>(".ext-card-configure").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.dataset.id;
-        const ext = allExtensions.engines.find((e) => e.id === id);
-        if (ext) openModal(ext);
+  container
+    .querySelectorAll<HTMLInputElement>(".engine-toggle-input")
+    .forEach((input) => {
+      input.addEventListener("change", async () => {
+        const id = input.dataset.id;
+        if (id) enabledMap[id] = input.checked;
+        await idbSet(SETTINGS_KEY, enabledMap);
       });
     });
+
+  if (allowConfigure) {
+    container
+      .querySelectorAll<HTMLElement>(".ext-card-configure")
+      .forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          const ext = allExtensions.engines.find((e) => e.id === id);
+          if (ext) openModal(ext);
+        });
+      });
   }
 }

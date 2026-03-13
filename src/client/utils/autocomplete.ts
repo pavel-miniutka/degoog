@@ -1,4 +1,4 @@
-import { escapeHtml } from "../utils/dom";
+import { escapeHtml } from "./dom";
 
 let acController: AbortController | null = null;
 let acTimeout: ReturnType<typeof setTimeout> | null = null;

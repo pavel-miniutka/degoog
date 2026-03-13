@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import * as cache from "../cache";
+import * as cache from "../utils/cache";
 import { search, searchSingleEngine, mergeNewResults } from "../search";
 import {
   getEngineRegistry,
@@ -11,10 +11,10 @@ import {
   getSearchResultTabs,
   getSearchResultTabById,
 } from "../extensions/search-result-tabs/registry";
-import { getSettings } from "../plugin-settings";
+import { getSettings } from "../utils/plugin-settings";
 import { getClientIp } from "../utils/request";
-import { outgoingFetch } from "../outgoing";
-import { checkRateLimit } from "../rate-limit";
+import { outgoingFetch } from "../utils/outgoing";
+import { checkRateLimit } from "../utils/rate-limit";
 import type {
   EngineConfig,
   SearchType,
@@ -37,11 +37,9 @@ const _applyRateLimit = async (c: Context): Promise<Response | null> => {
   const ip = getClientIp(c) ?? "unknown";
   const result = checkRateLimit(ip, opts);
   if (!result.allowed && result.retryAfterSec !== undefined) {
-    return c.json(
-      { error: "Too many requests" },
-      429,
-      { "Retry-After": String(result.retryAfterSec) },
-    );
+    return c.json({ error: "Too many requests" }, 429, {
+      "Retry-After": String(result.retryAfterSec),
+    });
   }
   return null;
 };

@@ -1,6 +1,6 @@
-import { performLucky } from "./search";
+import { performLucky } from "../utils/search-actions";
 
-export function initLuckySlot(): void {
+export function initLuckyAnimation(): void {
   const btn = document.getElementById("btn-lucky");
   const inner = document.getElementById("lucky-slot-inner");
   if (!btn || !inner) return;
@@ -81,7 +81,9 @@ export function initLuckySlot(): void {
       inner.style.transition = "";
       inner.style.transform = "translateY(0)";
     }
-    const searchInput = document.getElementById("search-input") as HTMLInputElement | null;
+    const searchInput = document.getElementById(
+      "search-input",
+    ) as HTMLInputElement | null;
     void performLucky(searchInput?.value ?? "");
   });
 }

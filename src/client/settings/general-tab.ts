@@ -1,7 +1,7 @@
 import { idbGet, idbSet } from "../utils/db";
 import { THEME_KEY } from "../constants";
-import { applyTheme } from "../modules/theme";
-import { requestInstallPrompt } from "../modules/installPrompt";
+import { applyTheme } from "../utils/theme";
+import { requestInstallPrompt } from "../utils/install-prompt";
 import { authHeaders, jsonHeaders } from "../utils/request";
 
 export async function initThemeSelectOnly(): Promise<void> {
@@ -84,10 +84,12 @@ export async function initGeneralTab(
         }
         if (rateLimitBurstWindow)
           rateLimitBurstWindow.value = data.rateLimitBurstWindow ?? "";
-        if (rateLimitBurstMax) rateLimitBurstMax.value = data.rateLimitBurstMax ?? "";
+        if (rateLimitBurstMax)
+          rateLimitBurstMax.value = data.rateLimitBurstMax ?? "";
         if (rateLimitLongWindow)
           rateLimitLongWindow.value = data.rateLimitLongWindow ?? "";
-        if (rateLimitLongMax) rateLimitLongMax.value = data.rateLimitLongMax ?? "";
+        if (rateLimitLongMax)
+          rateLimitLongMax.value = data.rateLimitLongMax ?? "";
       }
     } catch {}
     proxyEnabled.addEventListener("change", () => {

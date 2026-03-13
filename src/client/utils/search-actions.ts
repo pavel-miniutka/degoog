@@ -2,15 +2,31 @@ import { state } from "../state";
 import { MAX_PAGE, BUILTIN_SEARCH_TYPES } from "../constants";
 import { showResults, setActiveTab } from "./navigation";
 import { getEngines } from "./engines";
-import { buildSearchUrl } from "../utils/url";
-import { buildPaginationHtml } from "../utils/pagination";
-import { destroyMediaObserver, closeMediaPreview } from "./media";
-import { renderAtAGlance } from "./render-slots";
-import { renderResults, renderSidebar, renderSlotPanels, clearSlotPanels } from "./render";
+import { buildSearchUrl } from "./url";
+import { buildPaginationHtml } from "./pagination";
+import {
+  destroyMediaObserver,
+  closeMediaPreview,
+} from "../modules/media/media";
+import { renderAtAGlance } from "../modules/renderer/render-slots";
+import {
+  renderResults,
+  renderSidebar,
+  renderSlotPanels,
+  clearSlotPanels,
+} from "../modules/renderer/render";
 import { hideAcDropdown } from "./autocomplete";
-import { setResultsMeta, runScriptsInContainer, getNaturalLanguageBangQuery } from "./search-helpers";
-import { fetchGlancePanels, fetchSlotPanels, buildCommandGlanceHtml } from "./search-async";
-import { skeletonResults, skeletonGlance } from "./skeleton";
+import {
+  setResultsMeta,
+  runScriptsInContainer,
+  getNaturalLanguageBangQuery,
+} from "./search-helpers";
+import {
+  fetchGlancePanels,
+  fetchSlotPanels,
+  buildCommandGlanceHtml,
+} from "./search-utils";
+import { skeletonResults, skeletonGlance } from "../animations/skeleton";
 import type { Command, SearchResponse, ScoredResult } from "../types";
 
 let commandsCache: Command[] | null = null;
@@ -34,12 +50,16 @@ const _fetchCommands = async (): Promise<Command[]> => {
   return [];
 };
 
-export async function performSearch(query: string, type?: string, page?: number): Promise<void> {
+export async function performSearch(
+  query: string,
+  type?: string,
+  page?: number,
+): Promise<void> {
   const resolvedType = type || state.currentType || "all";
   if (!query.trim()) return;
 
   if (resolvedType.startsWith("tab:")) {
-    const { performTabSearch } = await import("./tab-search");
+    const { performTabSearch } = await import("../modules/tabs/tab-search");
     return performTabSearch(query, resolvedType.slice(4), page);
   }
 
@@ -51,10 +71,10 @@ export async function performSearch(query: string, type?: string, page?: number)
       if (prefix !== "all" && BUILTIN_SEARCH_TYPES.has(prefix)) {
         return performSearch(actualQuery, prefix, page);
       }
-      const { getPluginTabIds } = await import("./tabs");
+      const { getPluginTabIds } = await import("../modules/tabs/tabs");
       const knownTypes = await getPluginTabIds();
       if (knownTypes.has(prefix)) {
-        const { performTabSearch } = await import("./tab-search");
+        const { performTabSearch } = await import("../modules/tabs/tab-search");
         return performTabSearch(actualQuery, `engine:${prefix}`, page);
       }
     }
@@ -83,13 +103,16 @@ export async function performSearch(query: string, type?: string, page?: number)
   closeMediaPreview();
   hideAcDropdown(document.getElementById("ac-dropdown-home"));
   hideAcDropdown(document.getElementById("ac-dropdown-results"));
-  const resultsInput = document.getElementById("results-search-input") as HTMLInputElement | null;
+  const resultsInput = document.getElementById(
+    "results-search-input",
+  ) as HTMLInputElement | null;
   if (resultsInput) resultsInput.value = query;
   const resultsMeta = document.getElementById("results-meta");
   if (resultsMeta) resultsMeta.textContent = "Searching...";
   const useSkeleton = resolvedType === "all" || resolvedType === "news";
   const glanceEl = document.getElementById("at-a-glance");
-  if (glanceEl) glanceEl.innerHTML = resolvedType === "all" ? skeletonGlance() : "";
+  if (glanceEl)
+    glanceEl.innerHTML = resolvedType === "all" ? skeletonGlance() : "";
   const resultsList = document.getElementById("results-list");
   if (resultsList) {
     resultsList.innerHTML = useSkeleton
@@ -108,8 +131,9 @@ export async function performSearch(query: string, type?: string, page?: number)
   history.pushState(null, "", `/search?${urlParams.toString()}`);
 
   const commands = await _fetchCommands();
-  const bangQuery =
-    commands.length ? getNaturalLanguageBangQuery(query, commands) : null;
+  const bangQuery = commands.length
+    ? getNaturalLanguageBangQuery(query, commands)
+    : null;
 
   if (bangQuery) {
     return _performSearchWithBang(bangQuery, url, query, resolvedType);
@@ -128,7 +152,8 @@ export async function performSearch(query: string, type?: string, page?: number)
       renderSidebar(data, (q) => void performSearch(q));
       renderSlotPanels(data.slotPanels || []);
       void fetchGlancePanels(query, data.results, data.atAGlance);
-      if (!data.slotPanels || data.slotPanels.length === 0) void fetchSlotPanels(query);
+      if (!data.slotPanels || data.slotPanels.length === 0)
+        void fetchSlotPanels(query);
     }
     if (resolvedType !== "all") {
       if (glanceEl) glanceEl.innerHTML = "";
@@ -138,7 +163,8 @@ export async function performSearch(query: string, type?: string, page?: number)
   } catch {
     if (resultsMeta) resultsMeta.textContent = "";
     if (resultsList)
-      resultsList.innerHTML = '<div class="no-results">Search failed. Please try again.</div>';
+      resultsList.innerHTML =
+        '<div class="no-results">Search failed. Please try again.</div>';
   }
 }
 
@@ -192,16 +218,23 @@ async function _performSearchWithBang(
   } catch {
     if (resultsMeta) resultsMeta.textContent = "";
     if (resultsList)
-      resultsList.innerHTML = '<div class="no-results">Search failed. Please try again.</div>';
+      resultsList.innerHTML =
+        '<div class="no-results">Search failed. Please try again.</div>';
   }
 }
 
-async function _performBangCommand(query: string, _type: string, page = 1): Promise<void> {
+async function _performBangCommand(
+  query: string,
+  _type: string,
+  page = 1,
+): Promise<void> {
   showResults();
   closeMediaPreview();
   hideAcDropdown(document.getElementById("ac-dropdown-home"));
   hideAcDropdown(document.getElementById("ac-dropdown-results"));
-  const resultsInput = document.getElementById("results-search-input") as HTMLInputElement | null;
+  const resultsInput = document.getElementById(
+    "results-search-input",
+  ) as HTMLInputElement | null;
   if (resultsInput) resultsInput.value = query;
   const resultsMeta = document.getElementById("results-meta");
   if (resultsMeta) resultsMeta.textContent = "Running command...";
@@ -209,7 +242,8 @@ async function _performBangCommand(query: string, _type: string, page = 1): Prom
   if (glanceEl) glanceEl.innerHTML = "";
   const resultsList = document.getElementById("results-list");
   if (resultsList)
-    resultsList.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+    resultsList.innerHTML =
+      '<div class="loading-dots"><span></span><span></span><span></span></div>';
   const pagination = document.getElementById("pagination");
   if (pagination) pagination.innerHTML = "";
   const sidebar = document.getElementById("results-sidebar");
@@ -235,7 +269,12 @@ async function _performBangCommand(query: string, _type: string, page = 1): Prom
       type: string;
       results?: ScoredResult[];
       totalTime?: number;
-      atAGlance?: { snippet: string; url: string; title: string; sources: string[] } | null;
+      atAGlance?: {
+        snippet: string;
+        url: string;
+        title: string;
+        sources: string[];
+      } | null;
       title?: string;
       html?: string;
       totalPages?: number;
@@ -254,7 +293,12 @@ async function _performBangCommand(query: string, _type: string, page = 1): Prom
     if (resultsList) resultsList.innerHTML = data.html || "";
     runScriptsInContainer(resultsList);
     if (data.totalPages && data.totalPages > 1 && pagination) {
-      _renderBangPagination(pagination, data.totalPages, data.page ?? page, query);
+      _renderBangPagination(
+        pagination,
+        data.totalPages,
+        data.page ?? page,
+        query,
+      );
     }
   } catch {
     if (resultsMeta) resultsMeta.textContent = "";
@@ -276,7 +320,7 @@ function _renderBangPagination(
       e.preventDefault();
       const pageNum = parseInt(el.dataset.page ?? "0", 10);
       if (pageNum >= 1 && pageNum <= totalPages) {
-          void _performBangCommand(query, "all", pageNum);
+        void _performBangCommand(query, "all", pageNum);
       }
     });
   });
@@ -284,7 +328,8 @@ function _renderBangPagination(
 
 export async function goToPage(pageNum: number): Promise<void> {
   if (pageNum === state.currentPage) return;
-  const useSkeleton = state.currentType === "all" || state.currentType === "news";
+  const useSkeleton =
+    state.currentType === "all" || state.currentType === "news";
   const resultsList = document.getElementById("results-list");
   const pagination = document.getElementById("pagination");
   if (resultsList)
@@ -293,7 +338,12 @@ export async function goToPage(pageNum: number): Promise<void> {
       : '<div class="loading-dots"><span></span><span></span><span></span></div>';
   if (pagination) pagination.innerHTML = "";
   const engines = await getEngines();
-  const url = buildSearchUrl(state.currentQuery, engines, state.currentType, pageNum);
+  const url = buildSearchUrl(
+    state.currentQuery,
+    engines,
+    state.currentType,
+    pageNum,
+  );
   try {
     const res = await fetch(url);
     const data = (await res.json()) as SearchResponse;
@@ -305,14 +355,19 @@ export async function goToPage(pageNum: number): Promise<void> {
     if (state.currentPage === 1 && data.atAGlance) {
       renderAtAGlance(data.atAGlance);
     }
-    if (state.currentType === "all" && data.slotPanels && data.slotPanels.length > 0) {
+    if (
+      state.currentType === "all" &&
+      data.slotPanels &&
+      data.slotPanels.length > 0
+    ) {
       renderSlotPanels(data.slotPanels);
     }
     renderResults(state.currentResults);
     window.scrollTo(0, 0);
   } catch {
     if (resultsList)
-      resultsList.innerHTML = '<div class="no-results">Search failed. Please try again.</div>';
+      resultsList.innerHTML =
+        '<div class="no-results">Search failed. Please try again.</div>';
   }
 }
 
@@ -320,7 +375,10 @@ export async function retryEngine(engineName: string): Promise<void> {
   if (!state.currentQuery || !state.currentData) return;
 
   const engines = await getEngines();
-  const params = new URLSearchParams({ q: state.currentQuery, engine: engineName });
+  const params = new URLSearchParams({
+    q: state.currentQuery,
+    engine: engineName,
+  });
   for (const [key, val] of Object.entries(engines)) {
     params.set(key, String(val));
   }
@@ -336,7 +394,9 @@ export async function retryEngine(engineName: string): Promise<void> {
 
   try {
     const res = await fetch(`/api/search/retry?${params.toString()}`);
-    const data = (await res.json()) as SearchResponse & { results: ScoredResult[] };
+    const data = (await res.json()) as SearchResponse & {
+      results: ScoredResult[];
+    };
 
     if (data.engineTimings && state.currentData) {
       state.currentData.engineTimings = data.engineTimings;

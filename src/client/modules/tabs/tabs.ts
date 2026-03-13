@@ -1,5 +1,5 @@
-import { state } from "../state";
-import { performSearch } from "./search";
+import { state } from "../../state";
+import { performSearch } from "../../utils/search-actions";
 import { performTabSearch } from "./tab-search";
 
 interface TabInfo {
@@ -49,7 +49,9 @@ function _renderPluginTabs(): void {
   const toolsWrap = document.getElementById("tools-bar");
   if (!tabsContainer || !toolsWrap) return;
 
-  tabsContainer.querySelectorAll(".results-tab[data-plugin-tab]").forEach((el) => el.remove());
+  tabsContainer
+    .querySelectorAll(".results-tab[data-plugin-tab]")
+    .forEach((el) => el.remove());
 
   for (const tab of pluginTabs) {
     const el = document.createElement("div");

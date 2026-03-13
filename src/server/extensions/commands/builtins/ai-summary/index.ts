@@ -1,5 +1,5 @@
 import type { SettingField, SlotPlugin } from "../../../../types";
-import { getSettings, asString } from "../../../../plugin-settings";
+import { getSettings, asString } from "../../../../utils/plugin-settings";
 
 export const AI_SUMMARY_ID = "ai-summary";
 

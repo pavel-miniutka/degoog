@@ -1,6 +1,9 @@
-import { escapeHtml } from "../utils/dom";
-import { renderAtAGlance, appendSlotPanels } from "./render-slots";
-import { skeletonGlance } from "./skeleton";
+import { escapeHtml } from "./dom";
+import {
+  renderAtAGlance,
+  appendSlotPanels,
+} from "../modules/renderer/render-slots";
+import { skeletonGlance } from "../animations/skeleton";
 import { runScriptsInContainer } from "./search-helpers";
 import type { ScoredResult, SlotPanel } from "../types";
 
@@ -32,7 +35,9 @@ export async function fetchGlancePanels(
     if (signal.aborted) return;
     if (!glanceEl) return;
     if (data.panels && data.panels.length > 0) {
-      const glancePanels = data.panels.filter((p) => p.position === "at-a-glance");
+      const glancePanels = data.panels.filter(
+        (p) => p.position === "at-a-glance",
+      );
       const parts: string[] = [];
       for (const panel of glancePanels) {
         const titleHtml = panel.title
@@ -69,7 +74,11 @@ export const buildCommandGlanceHtml = (cmdData: {
   results?: ScoredResult[];
   atAGlance?: { snippet: string } | null;
 }): string => {
-  if (cmdData.type === "engine" && cmdData.results && cmdData.results.length > 0) {
+  if (
+    cmdData.type === "engine" &&
+    cmdData.results &&
+    cmdData.results.length > 0
+  ) {
     const glance =
       cmdData.atAGlance && cmdData.atAGlance.snippet
         ? `<div class="glance-box"><div class="glance-snippet">${escapeHtml(cmdData.atAGlance.snippet)}</div></div>`

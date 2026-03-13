@@ -2,6 +2,12 @@ import { fetch as undiciFetch, ProxyAgent } from "undici";
 import { getSettings } from "./plugin-settings";
 import { debug } from "./logger";
 
+export interface OutgoingFetchOptions {
+  headers?: Record<string, string>;
+  redirect?: RequestRedirect;
+  signal?: AbortSignal;
+}
+
 const DEGOOG_SETTINGS_ID = "degoog-settings";
 
 let allowedHosts: Set<string> | null = null;
@@ -43,12 +49,6 @@ export function isUrlAllowedForOutgoing(url: string): boolean {
   if (allowedHosts.has("*")) return true;
   const host = new URL(url).hostname.toLowerCase();
   return allowedHosts.has(host);
-}
-
-export interface OutgoingFetchOptions {
-  headers?: Record<string, string>;
-  redirect?: RequestRedirect;
-  signal?: AbortSignal;
 }
 
 export async function outgoingFetch(

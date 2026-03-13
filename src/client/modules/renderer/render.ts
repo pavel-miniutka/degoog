@@ -1,14 +1,19 @@
-import { state } from "../state";
-import { MAX_PAGE } from "../constants";
-import { escapeHtml, cleanUrl } from "../utils/dom";
-import { faviconUrl, proxyImageUrl } from "../utils/url";
-import { buildPaginationHtml } from "../utils/pagination";
-import { setupMediaObserver, destroyMediaObserver } from "./media";
+import { state } from "../../state";
+import { MAX_PAGE } from "../../constants";
+import { escapeHtml, cleanUrl } from "../../utils/dom";
+import { faviconUrl, proxyImageUrl } from "../../utils/url";
+import { buildPaginationHtml } from "../../utils/pagination";
+import { setupMediaObserver, destroyMediaObserver } from "../media/media";
 import { renderImageGrid, renderVideoGrid } from "./render-media";
-import { goToPage } from "./search";
-import type { ScoredResult } from "../types";
+import { goToPage } from "../../utils/search-actions";
+import type { ScoredResult } from "../../types";
 
-export { clearSlotPanels, renderSlotPanels, appendSlotPanels, renderAtAGlance } from "./render-slots";
+export {
+  clearSlotPanels,
+  renderSlotPanels,
+  appendSlotPanels,
+  renderAtAGlance,
+} from "./render-slots";
 export { renderSidebar } from "./render-sidebar";
 
 export function renderResults(results: ScoredResult[]): void {
@@ -57,7 +62,7 @@ export function renderResults(results: ScoredResult[]): void {
         <img class="result-favicon" src="${faviconUrl(r.url)}" alt="" width="26" height="26" onerror="this.style.display='none'">
         <cite class="result-cite">${escapeHtml(cleanUrl(r.url))}</cite>
       </div>
-      <a class="result-title" href="${escapeHtml(r.url)}" target="_blank">${escapeHtml(r.title)}</a>
+      <a class="result-title" href="${escapeHtml(r.url)}">${escapeHtml(r.title)}</a>
       <p class="result-snippet">${escapeHtml(r.snippet)}</p>
       <div class="result-engines">${r.sources.map((s) => `<span class="result-engine-tag">${escapeHtml(s)}</span>`).join("")}</div>`;
       if (thumbBlock) {

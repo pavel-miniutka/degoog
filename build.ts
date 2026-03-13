@@ -8,7 +8,7 @@ console.log("SCSS compiled successfully.");
 await esbuild.build({
   entryPoints: [
     { in: "src/client/app.ts", out: "app" },
-    { in: "src/client/settings.ts", out: "settings-page" },
+    { in: "src/client/modules/settings/settings.ts", out: "settings-page" },
   ],
   bundle: true,
   outdir: "src/public",
