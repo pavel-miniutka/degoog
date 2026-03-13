@@ -1,4 +1,4 @@
-import { idbGet } from "../utils/db";
+import { idbGet } from "./db";
 import { THEME_KEY } from "../constants";
 
 const _resolveTheme = (preference: string): string | null => {

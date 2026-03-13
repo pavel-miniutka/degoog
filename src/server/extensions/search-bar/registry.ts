@@ -1,6 +1,10 @@
 import type { SearchBarAction, ExtensionMeta } from "../../types";
-import { getSettings, asString, maskSecrets } from "../../plugin-settings";
-import { debug } from "../../logger";
+import {
+  getSettings,
+  asString,
+  maskSecrets,
+} from "../../utils/plugin-settings";
+import { debug } from "../../utils/logger";
 
 interface StoredAction {
   pluginId: string;
@@ -28,8 +32,8 @@ export async function initSearchBarActions(): Promise<void> {
   const { readdir, stat } = await import("fs/promises");
   const { join } = await import("path");
   const { pathToFileURL } = await import("url");
-  const pluginDir =
-    process.env.DEGOOG_PLUGINS_DIR ?? join(process.cwd(), "data", "plugins");
+  const { pluginsDir } = await import("../../utils/paths");
+  const pluginDir = pluginsDir();
   storedActions = [];
 
   try {

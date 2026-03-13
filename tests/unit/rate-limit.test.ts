@@ -7,7 +7,7 @@ import {
   BURST_MAX,
   LONG_WINDOW_SEC,
   LONG_MAX,
-} from "../../src/server/rate-limit";
+} from "../../src/server/utils/rate-limit";
 
 describe("rate-limit", () => {
   beforeEach(() => {
@@ -49,13 +49,13 @@ describe("rate-limit", () => {
   describe("checkRateLimit disabled", () => {
     test("always allows when rateLimitEnabled is not true", () => {
       expect(checkRateLimit("192.168.1.1", {})).toEqual({ allowed: true });
-      expect(checkRateLimit("192.168.1.1", { rateLimitEnabled: "false" })).toEqual(
-        { allowed: true },
-      );
+      expect(
+        checkRateLimit("192.168.1.1", { rateLimitEnabled: "false" }),
+      ).toEqual({ allowed: true });
       for (let i = 0; i < 20; i++) {
-        expect(checkRateLimit("192.168.1.1", { rateLimitEnabled: "false" })).toEqual(
-          { allowed: true },
-        );
+        expect(
+          checkRateLimit("192.168.1.1", { rateLimitEnabled: "false" }),
+        ).toEqual({ allowed: true });
       }
     });
   });

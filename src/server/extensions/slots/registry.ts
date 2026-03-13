@@ -1,8 +1,12 @@
 import { join } from "path";
 import type { SlotPlugin, SlotPanelPosition, PluginContext } from "../../types";
-import { getSettings } from "../../plugin-settings";
-import { addPluginCss, registerPluginScript, registerPluginSettingsId } from "../../plugin-assets";
-import { debug } from "../../logger";
+import { getSettings } from "../../utils/plugin-settings";
+import {
+  addPluginCss,
+  registerPluginScript,
+  registerPluginSettingsId,
+} from "../../utils/plugin-assets";
+import { debug } from "../../utils/logger";
 
 let slotPlugins: SlotPlugin[] = [];
 const builtinsDir = join(
@@ -79,7 +83,8 @@ async function loadSlotsFromRoot(
       const hasScript = await stat(join(entryPath, "script.js")).catch(
         () => null,
       );
-      if (hasScript?.isFile()) registerPluginScript(entry, source, slotSettingsId);
+      if (hasScript?.isFile())
+        registerPluginScript(entry, source, slotSettingsId);
       registerPluginSettingsId(entry, slotSettingsId);
 
       if (slot.init) {
@@ -95,8 +100,7 @@ async function loadSlotsFromRoot(
       if (slot.settingsSchema?.length && slot.configure) {
         try {
           const stored = await getSettings(slotSettingsId);
-          if (Object.keys(stored).length > 0)
-            slot.configure(stored);
+          if (Object.keys(stored).length > 0) slot.configure(stored);
         } catch (err) {
           debug("slots", `Failed to configure slot plugin: ${slot.id}`, err);
         }
@@ -109,8 +113,8 @@ async function loadSlotsFromRoot(
 }
 
 export async function initSlotPlugins(): Promise<void> {
-  const pluginDir =
-    process.env.DEGOOG_PLUGINS_DIR ?? join(process.cwd(), "data", "plugins");
+  const { pluginsDir } = await import("../../utils/paths");
+  const pluginDir = pluginsDir();
   slotPlugins = [];
   await loadSlotsFromRoot(builtinsDir, "builtin");
   await loadSlotsFromRoot(pluginDir, "plugin");

@@ -5,7 +5,7 @@ import type {
   TimeFilter,
   EngineContext,
 } from "../../types";
-import { getRandomUserAgent } from "../../user-agents";
+import { getRandomUserAgent } from "../../utils/user-agents";
 
 const BASE_URL = "https://search.brave.com/";
 const TIME_RANGE_MAP: Record<string, string> = {

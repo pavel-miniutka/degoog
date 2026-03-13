@@ -1,5 +1,5 @@
 import type { RequestMiddleware } from "../../types";
-import { debug } from "../../logger";
+import { debug } from "../../utils/logger";
 
 const middlewares = new Map<string, RequestMiddleware>();
 
@@ -17,8 +17,8 @@ export async function initMiddlewareRegistry(): Promise<void> {
   const { readdir, stat } = await import("fs/promises");
   const { join } = await import("path");
   const { pathToFileURL } = await import("url");
-  const pluginDir =
-    process.env.DEGOOG_PLUGINS_DIR ?? join(process.cwd(), "data", "plugins");
+  const { pluginsDir } = await import("../../utils/paths");
+  const pluginDir = pluginsDir();
   middlewares.clear();
 
   try {

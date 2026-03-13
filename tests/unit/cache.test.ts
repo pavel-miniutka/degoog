@@ -7,7 +7,7 @@ import {
   TTL_MS,
   SHORT_TTL_MS,
   NEWS_TTL_MS,
-} from "../../src/server/cache";
+} from "../../src/server/utils/cache";
 import type { SearchResponse } from "../../src/server/types";
 
 const mockResponse = (timings: { resultCount: number }[]): SearchResponse => ({

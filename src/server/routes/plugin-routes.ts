@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { findPluginRoute } from "../extensions/plugin-routes/registry";
-import { getSettings } from "../plugin-settings";
-import { getPluginSettingsIds } from "../plugin-assets";
+import { getSettings } from "../utils/plugin-settings";
+import { getPluginSettingsIds } from "../utils/plugin-assets";
 
 const router = new Hono();
 

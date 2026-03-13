@@ -1,5 +1,5 @@
 import type { PluginRoute } from "../../types";
-import { debug } from "../../logger";
+import { debug } from "../../utils/logger";
 
 const pluginRoutes = new Map<string, PluginRoute[]>();
 
@@ -27,8 +27,8 @@ export async function initPluginRoutes(): Promise<void> {
   const { readdir, stat } = await import("fs/promises");
   const { join } = await import("path");
   const { pathToFileURL } = await import("url");
-  const pluginDir =
-    process.env.DEGOOG_PLUGINS_DIR ?? join(process.cwd(), "data", "plugins");
+  const { pluginsDir } = await import("../../utils/paths");
+  const pluginDir = pluginsDir();
   pluginRoutes.clear();
 
   try {

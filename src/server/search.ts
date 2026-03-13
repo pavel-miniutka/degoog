@@ -14,7 +14,7 @@ import {
   getActiveWebEngines,
   getEnginesForSearchType,
 } from "./extensions/engines/registry";
-import { outgoingFetch } from "./outgoing";
+import { outgoingFetch } from "./utils/outgoing";
 
 const MAX_PAGE = 10;
 const ENGINE_TIMEOUT_MS = 10_000;
@@ -97,7 +97,10 @@ async function fetchRelatedSearches(query: string): Promise<string[]> {
       `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`,
     );
     const buf = await res.arrayBuffer();
-    const data = JSON.parse(new TextDecoder("iso-8859-1").decode(buf)) as [string, string[]];
+    const data = JSON.parse(new TextDecoder("iso-8859-1").decode(buf)) as [
+      string,
+      string[],
+    ];
     return (data[1] || [])
       .filter((s: string) => s.toLowerCase() !== query.toLowerCase())
       .slice(0, 8);

@@ -1,4 +1,4 @@
-import { idbGet } from "../utils/db";
+import { idbGet } from "./db";
 import { SETTINGS_KEY } from "../constants";
 import type { EngineRecord, EngineRegistry } from "../types";
 

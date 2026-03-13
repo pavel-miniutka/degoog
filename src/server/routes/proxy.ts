@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { getSettings, asString } from "../plugin-settings";
-import { outgoingFetch, isUrlAllowedForOutgoing } from "../outgoing";
+import { getSettings, asString } from "../utils/plugin-settings";
+import { outgoingFetch, isUrlAllowedForOutgoing } from "../utils/outgoing";
 
 const router = new Hono();
 

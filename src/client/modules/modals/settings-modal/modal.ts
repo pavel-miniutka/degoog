@@ -1,16 +1,18 @@
 import { renderField, initUrlList } from "./modal-fields";
-import type { ExtensionMeta } from "../types";
+import type { ExtensionMeta } from "../../../types";
 
 const overlay = document.getElementById("ext-modal-overlay");
 const titleEl = document.getElementById("ext-modal-title");
 const bodyEl = document.getElementById("ext-modal-body");
-const saveBtn = document.getElementById("ext-modal-save") as HTMLButtonElement | null;
+const saveBtn = document.getElementById(
+  "ext-modal-save",
+) as HTMLButtonElement | null;
 const closeBtn = document.getElementById("ext-modal-close");
 const statusEl = document.getElementById("ext-modal-status");
 
 let currentExt: ExtensionMeta | null = null;
 
-function collectValues(): Record<string, string | string[]> {
+const _collectValues = (): Record<string, string | string[]> => {
   const values: Record<string, string | string[]> = {};
   bodyEl?.querySelectorAll<HTMLElement>(".ext-field").forEach((fieldEl) => {
     const key = fieldEl.dataset.key;
@@ -20,7 +22,9 @@ function collectValues(): Record<string, string | string[]> {
     const wasSet = fieldEl.dataset.wasSet === "true";
 
     if (type === "toggle") {
-      const input = fieldEl.querySelector<HTMLInputElement>("input[type=checkbox]");
+      const input = fieldEl.querySelector<HTMLInputElement>(
+        "input[type=checkbox]",
+      );
       values[key] = input?.checked ? "true" : "false";
       return;
     }
@@ -30,9 +34,13 @@ function collectValues(): Record<string, string | string[]> {
       return;
     }
     if (type === "urllist") {
-      const hidden = fieldEl.querySelector<HTMLInputElement>(".ext-field-urllist-value");
+      const hidden = fieldEl.querySelector<HTMLInputElement>(
+        ".ext-field-urllist-value",
+      );
       try {
-        const parsed = hidden?.value ? (JSON.parse(hidden.value) as unknown) : [];
+        const parsed = hidden?.value
+          ? (JSON.parse(hidden.value) as unknown)
+          : [];
         values[key] = Array.isArray(parsed) ? (parsed as string[]) : [];
       } catch {
         values[key] = [];
@@ -53,7 +61,7 @@ function collectValues(): Record<string, string | string[]> {
     }
   });
   return values;
-}
+};
 
 export function openModal(ext: ExtensionMeta): void {
   currentExt = ext;
@@ -62,18 +70,28 @@ export function openModal(ext: ExtensionMeta): void {
 
   if (bodyEl) {
     bodyEl.innerHTML = ext.settingsSchema
-      .map((field) => renderField(field, String(ext.settings[field.key] ?? ""), ext))
+      .map((field) =>
+        renderField(field, String(ext.settings[field.key] ?? ""), ext),
+      )
       .join("");
     initUrlList(bodyEl);
-    bodyEl.querySelectorAll<HTMLElement>(".ext-field-input--configured").forEach((input) => {
-      input.addEventListener("focus", () => input.classList.remove("ext-field-input--configured"), {
-        once: true,
+    bodyEl
+      .querySelectorAll<HTMLElement>(".ext-field-input--configured")
+      .forEach((input) => {
+        input.addEventListener(
+          "focus",
+          () => input.classList.remove("ext-field-input--configured"),
+          {
+            once: true,
+          },
+        );
       });
-    });
   }
 
   if (overlay) overlay.style.display = "flex";
-  const firstFocusable = bodyEl?.querySelector<HTMLElement>("select, input, textarea");
+  const firstFocusable = bodyEl?.querySelector<HTMLElement>(
+    "select, input, textarea",
+  );
   firstFocusable?.focus();
 }
 
@@ -83,17 +101,20 @@ export function closeModal(): void {
   if (statusEl) statusEl.textContent = "";
 }
 
-async function save(): Promise<void> {
+async function _save(): Promise<void> {
   if (!currentExt) return;
-  const values = collectValues();
+  const values = _collectValues();
   if (saveBtn) saveBtn.disabled = true;
   if (statusEl) statusEl.textContent = "Saving…";
   try {
-    const res = await fetch(`/api/extensions/${encodeURIComponent(currentExt.id)}/settings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
+    const res = await fetch(
+      `/api/extensions/${encodeURIComponent(currentExt.id)}/settings`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      },
+    );
     if (!res.ok) throw new Error("Failed");
     if (statusEl) statusEl.textContent = "Saved";
     window.dispatchEvent(new CustomEvent("extensions-saved"));
@@ -105,7 +126,7 @@ async function save(): Promise<void> {
   }
 }
 
-saveBtn?.addEventListener("click", () => void save());
+saveBtn?.addEventListener("click", () => void _save());
 closeBtn?.addEventListener("click", closeModal);
 overlay?.addEventListener("click", (e) => {
   if (e.target === overlay) closeModal();

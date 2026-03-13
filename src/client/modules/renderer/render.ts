@@ -1,14 +1,19 @@
-import { state } from "../state";
-import { MAX_PAGE } from "../constants";
-import { escapeHtml, cleanUrl } from "../utils/dom";
-import { faviconUrl, proxyImageUrl } from "../utils/url";
-import { buildPaginationHtml } from "../utils/pagination";
-import { setupMediaObserver, destroyMediaObserver } from "./media";
+import { state } from "../../state";
+import { MAX_PAGE } from "../../constants";
+import { escapeHtml, cleanUrl } from "../../utils/dom";
+import { faviconUrl, proxyImageUrl } from "../../utils/url";
+import { buildPaginationHtml } from "../../utils/pagination";
+import { setupMediaObserver, destroyMediaObserver } from "../media/media";
 import { renderImageGrid, renderVideoGrid } from "./render-media";
-import { goToPage } from "./search";
-import type { ScoredResult } from "../types";
+import { goToPage } from "../../utils/search-actions";
+import type { ScoredResult } from "../../types";
 
-export { clearSlotPanels, renderSlotPanels, appendSlotPanels, renderAtAGlance } from "./render-slots";
+export {
+  clearSlotPanels,
+  renderSlotPanels,
+  appendSlotPanels,
+  renderAtAGlance,
+} from "./render-slots";
 export { renderSidebar } from "./render-sidebar";
 
 export function renderResults(results: ScoredResult[]): void {

@@ -4,8 +4,8 @@ import type {
   EngineConfig,
   ExtensionMeta,
 } from "../../types";
-import { getSettings, maskSecrets } from "../../plugin-settings";
-import { debug } from "../../logger";
+import { getSettings, maskSecrets } from "../../utils/plugin-settings";
+import { debug } from "../../utils/logger";
 import { GoogleEngine } from "./google";
 import { DuckDuckGoEngine } from "./duckduckgo";
 import { BingEngine } from "./bing";
@@ -354,8 +354,8 @@ export async function initEngines(): Promise<void> {
   const { readdir } = await import("fs/promises");
   const { join } = await import("path");
   const { pathToFileURL } = await import("url");
-  const pluginDir =
-    process.env.DEGOOG_ENGINES_DIR ?? join(process.cwd(), "data", "engines");
+  const { enginesDir } = await import("../../utils/paths");
+  const pluginDir = enginesDir();
   const seen = new Set<string>(BUILTIN_DEFINITIONS.map((d) => d.id));
 
   const { stat } = await import("fs/promises");

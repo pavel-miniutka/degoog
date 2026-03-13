@@ -4,7 +4,7 @@ import type {
   TimeFilter,
   EngineContext,
 } from "../../types";
-import { getRandomUserAgent } from "../../user-agents";
+import { getRandomUserAgent } from "../../utils/user-agents";
 
 export class RedditEngine implements SearchEngine {
   name = "Reddit";

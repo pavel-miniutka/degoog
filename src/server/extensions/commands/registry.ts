@@ -10,9 +10,9 @@ import {
   getSettings,
   maskSecrets,
   asString,
-} from "../../plugin-settings";
-import { addPluginCss, registerPluginScript } from "../../plugin-assets";
-import { debug } from "../../logger";
+} from "../../utils/plugin-settings";
+import { addPluginCss, registerPluginScript } from "../../utils/plugin-assets";
+import { debug } from "../../utils/logger";
 
 interface CommandEntry {
   id: string;
@@ -120,8 +120,7 @@ async function loadCommandsFromRoot(
 
       if (instance.configure && instance.settingsSchema?.length) {
         const stored = await getSettings(id);
-        if (Object.keys(stored).length > 0)
-          instance.configure(stored);
+        if (Object.keys(stored).length > 0) instance.configure(stored);
       }
       allCommands.push({
         id,
@@ -137,14 +136,12 @@ async function loadCommandsFromRoot(
 
 export async function initPlugins(): Promise<void> {
   const { readFile } = await import("fs/promises");
-  const commandDir =
-    process.env.DEGOOG_PLUGINS_DIR ?? join(process.cwd(), "data", "plugins");
+  const { pluginsDir, aliasesFile } = await import("../../utils/paths");
+  const commandDir = pluginsDir();
   allCommands = [];
 
   try {
-    const aliasPath =
-      process.env.DEGOOG_ALIASES_FILE ??
-      join(process.cwd(), "data", "aliases.json");
+    const aliasPath = aliasesFile();
     const raw = await readFile(aliasPath, "utf-8");
     const parsed = JSON.parse(raw);
     if (

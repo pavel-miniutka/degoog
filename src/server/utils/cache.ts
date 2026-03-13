@@ -1,4 +1,4 @@
-import type { SearchResponse } from "./types";
+import type { SearchResponse } from "../types";
 
 const TTL_MS = 12 * 60 * 60 * 1000;
 const SHORT_TTL_MS = 2 * 60 * 1000;
@@ -14,7 +14,11 @@ export function get(key: string): SearchResponse | null {
   return entry.value;
 }
 
-export function set(key: string, value: SearchResponse, ttlMs: number = TTL_MS): void {
+export function set(
+  key: string,
+  value: SearchResponse,
+  ttlMs: number = TTL_MS,
+): void {
   store.set(key, { value, expiresAt: Date.now() + ttlMs });
 }
 

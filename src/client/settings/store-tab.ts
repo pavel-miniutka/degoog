@@ -1,5 +1,6 @@
 import { escapeHtml } from "../utils/dom";
 import { jsonHeaders, authHeaders } from "../utils/request";
+import { confirmModal } from "../modules/modals/confirm-modal/confirm";
 import { initLightbox, screenshotUrl } from "./store-lightbox";
 
 const OFFICIAL_REPO_URL =
@@ -479,9 +480,11 @@ export async function initStoreTab(
     const { repoUrl, itemPath, type } = btn.dataset;
     if (
       type === "plugin" &&
-      !confirm(
-        "This plugin will run code on your server. Only install from sources you trust. Continue?",
-      )
+      !(await confirmModal({
+        title: "Install plugin?",
+        message:
+          "This plugin will run code on your server. Only install from sources you trust. Continue?",
+      }))
     )
       return;
     btn.disabled = true;
@@ -503,7 +506,13 @@ export async function initStoreTab(
 
   async function handleUninstall(btn: HTMLButtonElement): Promise<void> {
     const { repoUrl, itemPath, type } = btn.dataset;
-    if (!confirm(`Uninstall this ${type ?? "item"}?`)) return;
+    if (
+      !(await confirmModal({
+        title: "Uninstall?",
+        message: `Uninstall this ${type ?? "item"}?`,
+      }))
+    )
+      return;
     btn.disabled = true;
     try {
       const res = await fetch("/api/store/uninstall", {
@@ -602,7 +611,7 @@ export async function initStoreTab(
       }
     });
 
-  container.addEventListener("click", (e) => {
+  container.addEventListener("click", async (e) => {
     const refreshBtn = (e.target as HTMLElement).closest<HTMLElement>(
       ".store-btn-refresh",
     );
@@ -611,13 +620,12 @@ export async function initStoreTab(
     );
     if (refreshBtn?.dataset.url) void handleRefresh(refreshBtn.dataset.url);
     if (removeBtn?.dataset.url) {
-      if (
-        confirm(
+      const ok = await confirmModal({
+        title: "Remove repository?",
+        message:
           "Remove this repository? You must uninstall any installed items first.",
-        )
-      ) {
-        void handleRemove(removeBtn.dataset.url);
-      }
+      });
+      if (ok) void handleRemove(removeBtn.dataset.url);
     }
   });
 

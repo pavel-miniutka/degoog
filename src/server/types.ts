@@ -32,7 +32,11 @@ export interface ExtensionMeta {
 
 export type EngineFetch = (
   url: string,
-  options?: { headers?: Record<string, string>; redirect?: RequestRedirect; signal?: AbortSignal },
+  options?: {
+    headers?: Record<string, string>;
+    redirect?: RequestRedirect;
+    signal?: AbortSignal;
+  },
 ) => Promise<Response>;
 
 export interface EngineContext {

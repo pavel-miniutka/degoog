@@ -1,7 +1,10 @@
-import { escapeHtml } from "../utils/dom";
-import type { SettingField, ExtensionMeta } from "../types";
+import { escapeHtml } from "../../../utils/dom";
+import type { SettingField, ExtensionMeta } from "../../../types";
 
-function parseUrlListValue(raw: string | string[] | undefined, defaultUrls: string[]): string[] {
+const _parseUrlListValue = (
+  raw: string | string[] | undefined,
+  defaultUrls: string[],
+): string[] => {
   if (Array.isArray(raw)) {
     return raw.filter((u) => typeof u === "string" && u.startsWith("http"));
   }
@@ -15,11 +18,17 @@ function parseUrlListValue(raw: string | string[] | undefined, defaultUrls: stri
   } catch {
     return defaultUrls;
   }
-}
+};
 
-function renderUrlListField(field: SettingField, ext: ExtensionMeta): string {
+const _renderUrlListField = (
+  field: SettingField,
+  ext: ExtensionMeta,
+): string => {
   const defaultUrls = ext.defaultFeedUrls ?? [];
-  const urls = parseUrlListValue(ext.settings[field.key] as string | string[] | undefined, defaultUrls);
+  const urls = _parseUrlListValue(
+    ext.settings[field.key] as string | string[] | undefined,
+    defaultUrls,
+  );
   const descHtml = field.description
     ? `<p class="ext-field-desc">${escapeHtml(field.description)}</p>`
     : "";
@@ -43,32 +52,42 @@ function renderUrlListField(field: SettingField, ext: ExtensionMeta): string {
       <input type="hidden" id="field-${escapeHtml(field.key)}" class="ext-field-urllist-value">
       ${descHtml}
     </div>`;
-}
+};
 
 export function initUrlList(container: HTMLElement): void {
-  const field = container.querySelector<HTMLElement>(".ext-field[data-type='urllist']");
+  const field = container.querySelector<HTMLElement>(
+    ".ext-field[data-type='urllist']",
+  );
   if (!field) return;
   const listEl = field.querySelector<HTMLElement>(".ext-field-urllist");
-  const addInput = field.querySelector<HTMLInputElement>(".ext-field-urllist-input");
+  const addInput = field.querySelector<HTMLInputElement>(
+    ".ext-field-urllist-input",
+  );
   const addBtn = field.querySelector<HTMLElement>(".ext-field-urllist-add-btn");
-  const hiddenInput = field.querySelector<HTMLInputElement>(".ext-field-urllist-value");
+  const hiddenInput = field.querySelector<HTMLInputElement>(
+    ".ext-field-urllist-value",
+  );
   if (!listEl || !addInput || !addBtn || !hiddenInput) return;
 
-  const initialUrls = [...listEl.querySelectorAll<HTMLElement>(".ext-field-urllist-item")]
+  const initialUrls = [
+    ...listEl.querySelectorAll<HTMLElement>(".ext-field-urllist-item"),
+  ]
     .map((li) => li.dataset.url || "")
     .filter(Boolean);
   hiddenInput.value = JSON.stringify(initialUrls);
 
-  function getUrls(): string[] {
+  const getUrls = (): string[] => {
     try {
       const parsed = JSON.parse(hiddenInput?.value || "[]") as unknown;
       return Array.isArray(parsed)
-        ? (parsed as unknown[]).filter((u): u is string => typeof u === "string")
+        ? (parsed as unknown[]).filter(
+            (u): u is string => typeof u === "string",
+          )
         : [];
     } catch {
       return [];
     }
-  }
+  };
 
   function setUrls(urls: string[]): void {
     if (hiddenInput) hiddenInput.value = JSON.stringify(urls);
@@ -90,22 +109,27 @@ export function initUrlList(container: HTMLElement): void {
     li.className = "ext-field-urllist-item";
     li.dataset.url = trimmed;
     li.innerHTML = `<span class="ext-field-urllist-url">${escapeHtml(trimmed)}</span><button type="button" class="ext-field-urllist-remove" aria-label="Remove">×</button>`;
-    li.querySelector(".ext-field-urllist-remove")?.addEventListener("click", () => {
-      setUrls(getUrls().filter((x) => x !== trimmed));
-      li.remove();
-    });
+    li.querySelector(".ext-field-urllist-remove")?.addEventListener(
+      "click",
+      () => {
+        setUrls(getUrls().filter((x) => x !== trimmed));
+        li.remove();
+      },
+    );
     listEl?.appendChild(li);
   }
 
-  field.querySelectorAll<HTMLElement>(".ext-field-urllist-remove").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const li = btn.closest<HTMLElement>(".ext-field-urllist-item");
-      const url = li?.dataset?.url;
-      if (!url) return;
-      setUrls(getUrls().filter((u) => u !== url));
-      li?.remove();
+  field
+    .querySelectorAll<HTMLElement>(".ext-field-urllist-remove")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const li = btn.closest<HTMLElement>(".ext-field-urllist-item");
+        const url = li?.dataset?.url;
+        if (!url) return;
+        setUrls(getUrls().filter((u) => u !== url));
+        li?.remove();
+      });
     });
-  });
 
   addBtn.addEventListener("click", () => {
     if (addInput.value) {
@@ -124,18 +148,23 @@ export function initUrlList(container: HTMLElement): void {
   });
 }
 
-export function renderField(field: SettingField, currentValue: string, ext: ExtensionMeta): string {
+export const renderField = (
+  field: SettingField,
+  currentValue: string,
+  ext: ExtensionMeta,
+): string => {
   const isSecret = field.secret === true;
   const isSet = currentValue === "__SET__";
   const displayValue = isSecret ? "" : currentValue || "";
-  const configuredClass = isSecret && isSet ? " ext-field-input--configured" : "";
+  const configuredClass =
+    isSecret && isSet ? " ext-field-input--configured" : "";
   const placeholder = isSecret && isSet ? "••••••••" : field.placeholder || "";
   const descHtml = field.description
     ? `<p class="ext-field-desc">${escapeHtml(field.description)}</p>`
     : "";
 
   if (field.type === "urllist") {
-    return renderUrlListField(field, ext);
+    return _renderUrlListField(field, ext);
   }
 
   if (field.type === "toggle") {
@@ -162,8 +191,14 @@ export function renderField(field: SettingField, currentValue: string, ext: Exte
       </div>`;
   }
 
-  if (field.type === "select" && Array.isArray(field.options) && field.options.length > 0) {
-    const validValue = field.options.includes(currentValue) ? currentValue : field.options[0];
+  if (
+    field.type === "select" &&
+    Array.isArray(field.options) &&
+    field.options.length > 0
+  ) {
+    const validValue = field.options.includes(currentValue)
+      ? currentValue
+      : field.options[0];
     const opts = field.options
       .map(
         (v) =>
@@ -179,11 +214,15 @@ export function renderField(field: SettingField, currentValue: string, ext: Exte
   }
 
   const inputType =
-    field.type === "password" ? "password" : field.type === "url" ? "url" : "text";
+    field.type === "password"
+      ? "password"
+      : field.type === "url"
+        ? "url"
+        : "text";
   return `
     <div class="ext-field" data-key="${escapeHtml(field.key)}" data-type="${escapeHtml(field.type)}" data-secret="${isSecret}" data-was-set="${isSet}">
       <label class="ext-field-label" for="field-${escapeHtml(field.key)}">${escapeHtml(field.label)}${field.required ? " <span class='ext-required'>*</span>" : ""}</label>
       <input class="ext-field-input${configuredClass}" type="${inputType}" id="field-${escapeHtml(field.key)}" value="${escapeHtml(displayValue)}" placeholder="${escapeHtml(placeholder)}" autocomplete="off">
       ${descHtml}
     </div>`;
-}
+};

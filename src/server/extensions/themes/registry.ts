@@ -6,8 +6,8 @@ import {
   setSettings,
   maskSecrets,
   asString,
-} from "../../plugin-settings";
-import { debug } from "../../logger";
+} from "../../utils/plugin-settings";
+import { debug } from "../../utils/logger";
 import type { SettingField, ExtensionMeta } from "../../types";
 
 const THEME_SETTINGS_ID = "theme";
@@ -35,8 +35,9 @@ export interface LoadedTheme {
   compiledCss?: string;
 }
 
-const THEMES_DIR =
-  process.env.DEGOOG_THEMES_DIR ?? join(process.cwd(), "data", "themes");
+import { themesDir } from "../../utils/paths";
+
+const THEMES_DIR = themesDir();
 
 let themes: LoadedTheme[] = [];
 let activeThemeId: string | null = null;
@@ -105,7 +106,8 @@ export async function initThemes(): Promise<void> {
 
         if (manifest.settingsSchema?.length) {
           const stored = await getSettings(settingsId(entry.name));
-          if (Object.keys(stored).length > 0) { }
+          if (Object.keys(stored).length > 0) {
+          }
         }
 
         themes.push(theme);
@@ -122,11 +124,6 @@ export async function initThemes(): Promise<void> {
   if (activeThemeId && !themes.find((t) => t.id === activeThemeId)) {
     activeThemeId = null;
     await saveActiveThemeId(null);
-  }
-
-  const names = themes.map((t) => t.id);
-  if (names.length > 0) {
-    console.log(`  themes: ${names.join(", ")}`);
   }
 }
 

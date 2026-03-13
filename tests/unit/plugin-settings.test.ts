@@ -1,5 +1,8 @@
 import { describe, test, expect } from "bun:test";
-import { maskSecrets, mergeSecrets } from "../../src/server/plugin-settings";
+import {
+  maskSecrets,
+  mergeSecrets,
+} from "../../src/server/utils/plugin-settings";
 
 describe("plugin-settings", () => {
   describe("maskSecrets", () => {

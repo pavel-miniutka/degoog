@@ -1,15 +1,19 @@
-import { state } from "../state";
-import { showResults, setActiveTab } from "./navigation";
-import { closeMediaPreview, destroyMediaObserver } from "./media";
-import { hideAcDropdown } from "./autocomplete";
-import { clearSlotPanels } from "./render";
-import { skeletonResults } from "./skeleton";
-import { escapeHtml, cleanUrl } from "../utils/dom";
-import { faviconUrl, proxyImageUrl } from "../utils/url";
-import { buildPaginationHtml } from "../utils/pagination";
-import type { ScoredResult } from "../types";
+import { state } from "../../state";
+import { showResults, setActiveTab } from "../../utils/navigation";
+import { closeMediaPreview, destroyMediaObserver } from "../media/media";
+import { hideAcDropdown } from "../../utils/autocomplete";
+import { clearSlotPanels } from "../renderer/render";
+import { skeletonResults } from "../../animations/skeleton";
+import { escapeHtml, cleanUrl } from "../../utils/dom";
+import { faviconUrl, proxyImageUrl } from "../../utils/url";
+import { buildPaginationHtml } from "../../utils/pagination";
+import type { ScoredResult } from "../../types";
 
-export async function performTabSearch(query: string, tabId: string, page = 1): Promise<void> {
+export async function performTabSearch(
+  query: string,
+  tabId: string,
+  page = 1,
+): Promise<void> {
   if (!query.trim()) return;
 
   state.currentQuery = query;
@@ -23,7 +27,9 @@ export async function performTabSearch(query: string, tabId: string, page = 1): 
   hideAcDropdown(document.getElementById("ac-dropdown-home"));
   hideAcDropdown(document.getElementById("ac-dropdown-results"));
 
-  const resultsInput = document.getElementById("results-search-input") as HTMLInputElement | null;
+  const resultsInput = document.getElementById(
+    "results-search-input",
+  ) as HTMLInputElement | null;
   if (resultsInput) resultsInput.value = query;
   const resultsMeta = document.getElementById("results-meta");
   if (resultsMeta) resultsMeta.textContent = "Searching...";
@@ -46,12 +52,21 @@ export async function performTabSearch(query: string, tabId: string, page = 1): 
   history.pushState(null, "", `/search?${urlParams.toString()}`);
 
   try {
-    const params = new URLSearchParams({ tab: tabId, q: query, page: String(page) });
+    const params = new URLSearchParams({
+      tab: tabId,
+      q: query,
+      page: String(page),
+    });
     const res = await fetch(`/api/tab-search?${params.toString()}`);
-    const data = (await res.json()) as { results: ScoredResult[]; totalPages?: number; page?: number };
+    const data = (await res.json()) as {
+      results: ScoredResult[];
+      totalPages?: number;
+      page?: number;
+    };
 
     state.currentResults = data.results || [];
-    if (resultsMeta) resultsMeta.textContent = `${data.results?.length ?? 0} results`;
+    if (resultsMeta)
+      resultsMeta.textContent = `${data.results?.length ?? 0} results`;
 
     _renderTabResults(data.results || [], resultsList);
 
@@ -60,11 +75,16 @@ export async function performTabSearch(query: string, tabId: string, page = 1): 
     }
   } catch {
     if (resultsMeta) resultsMeta.textContent = "";
-    if (resultsList) resultsList.innerHTML = '<div class="no-results">Search failed. Please try again.</div>';
+    if (resultsList)
+      resultsList.innerHTML =
+        '<div class="no-results">Search failed. Please try again.</div>';
   }
 }
 
-function _renderTabResults(results: ScoredResult[], container: HTMLElement | null): void {
+function _renderTabResults(
+  results: ScoredResult[],
+  container: HTMLElement | null,
+): void {
   if (!container) return;
   if (results.length === 0) {
     container.innerHTML = '<div class="no-results">No results found.</div>';

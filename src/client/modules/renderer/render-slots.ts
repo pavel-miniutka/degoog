@@ -1,5 +1,5 @@
-import { escapeHtml } from "../utils/dom";
-import type { SlotPanel } from "../types";
+import { escapeHtml } from "../../utils/dom";
+import type { SlotPanel } from "../../types";
 
 const SLOT_IDS = ["slot-above-results", "slot-below-results", "slot-sidebar"];
 
@@ -52,12 +52,14 @@ export function appendSlotPanels(panels: SlotPanel[]): void {
   _renderSlotPanelsInto(panels, false);
 }
 
-export function renderAtAGlance(data: {
-  snippet: string;
-  url: string;
-  title: string;
-  sources: string[];
-} | null): void {
+export function renderAtAGlance(
+  data: {
+    snippet: string;
+    url: string;
+    title: string;
+    sources: string[];
+  } | null,
+): void {
   const container = document.getElementById("at-a-glance");
   if (!container) return;
   if (!data) {

@@ -4,7 +4,7 @@ import {
   getCommandsApiResponse,
 } from "../extensions/commands/registry";
 import { searchSingleEngine } from "../search";
-import { getSettings } from "../plugin-settings";
+import { getSettings } from "../utils/plugin-settings";
 import { getClientIp } from "../utils/request";
 import type { TimeFilter } from "../types";
 

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { join } from "path";
-import { getScriptFolderSource } from "../plugin-assets";
+import { getScriptFolderSource } from "../utils/plugin-assets";
+import { pluginsDir as getPluginsDir } from "../utils/paths";
 
 const MIME_TYPES: Record<string, string> = {
   ".js": "application/javascript",
@@ -18,9 +19,15 @@ const MIME_TYPES: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
-const pluginsDir =
-  process.env.DEGOOG_PLUGINS_DIR ?? join(process.cwd(), "data", "plugins");
-const builtinsDir = join(process.cwd(), "src", "server", "extensions", "commands", "builtins");
+const pluginsDir = getPluginsDir();
+const builtinsDir = join(
+  process.cwd(),
+  "src",
+  "server",
+  "extensions",
+  "commands",
+  "builtins",
+);
 
 const router = new Hono();
 

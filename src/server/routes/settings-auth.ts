@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
-import { getSettings, setSettings, asString } from "../plugin-settings";
+import { getSettings, setSettings, asString } from "../utils/plugin-settings";
 import { getMiddleware } from "../extensions/middleware/registry";
-import { isPublicInstance } from "../public-instance";
+import { isPublicInstance } from "../utils/public-instance";
 
 const DEGOOG_SETTINGS_ID = "degoog-settings";
 

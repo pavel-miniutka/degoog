@@ -8,7 +8,7 @@ import {
   MAX_PAGE,
 } from "../../src/client/constants";
 import { state } from "../../src/client/state";
-import { initTimeFilter } from "../../src/client/modules/timeFilter";
+import { initTimeFilter } from "../../src/client/utils/time-filter";
 
 describe("public/constants", () => {
   test("DB_NAME is string", () => {

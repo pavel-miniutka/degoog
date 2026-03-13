@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, mock } from "bun:test";
-import { clearRateLimitState } from "../../src/server/rate-limit";
+import { clearRateLimitState } from "../../src/server/utils/rate-limit";
 
 let rateLimitRouter: {
   request: (req: Request | string) => Response | Promise<Response>;

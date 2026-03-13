@@ -20,8 +20,8 @@ import {
   mergeSecrets,
   maskSecrets,
   type SettingValue,
-} from "../plugin-settings";
-import { getAllPluginCss } from "../plugin-assets";
+} from "../utils/plugin-settings";
+import { getAllPluginCss } from "../utils/plugin-assets";
 import type { ExtensionMeta } from "../types";
 
 const router = new Hono();

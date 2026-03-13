@@ -1,11 +1,14 @@
 import { escapeHtml, isConfigured } from "../utils/dom";
-import { openModal } from "../modules/modal/modal";
+import { openModal } from "../modules/modals/settings-modal/modal";
 import type { ExtensionMeta } from "../types";
 
 const _themeIdFromExtId = (extId: string): string =>
   extId.startsWith("theme-") ? extId.slice(6) : extId;
 
-const _renderThemeCard = (themeExt: ExtensionMeta, activeId: string | null): string => {
+const _renderThemeCard = (
+  themeExt: ExtensionMeta,
+  activeId: string | null,
+): string => {
   const themeId = _themeIdFromExtId(themeExt.id);
   const isActive = activeId === themeId;
   const configured = themeExt.configurable && isConfigured(themeExt);
@@ -13,7 +16,9 @@ const _renderThemeCard = (themeExt: ExtensionMeta, activeId: string | null): str
   const configureBtn = themeExt.configurable
     ? `<button class="ext-card-configure" data-id="${escapeHtml(themeExt.id)}" type="button">Configure</button>`
     : "";
-  const activeLabel = isActive ? '<span class="ext-card-active">Active</span>' : "";
+  const activeLabel = isActive
+    ? '<span class="ext-card-active">Active</span>'
+    : "";
   return `
     <div class="ext-card" data-theme-id="${escapeHtml(themeId)}">
       <div class="ext-card-main">
@@ -56,7 +61,8 @@ export async function initThemesTab(
   if (!container) return;
 
   const activeId = themesData.activeId;
-  let html = '<div class="ext-group"><h3 class="ext-group-label">Themes</h3><div class="ext-cards">';
+  let html =
+    '<div class="ext-group"><h3 class="ext-group-label">Themes</h3><div class="ext-cards">';
   html += _renderBuiltInCard(activeId);
   for (const ext of themeExts) {
     html += _renderThemeCard(ext, activeId);
@@ -64,30 +70,34 @@ export async function initThemesTab(
   html += "</div></div>";
   container.innerHTML = html;
 
-  container.querySelectorAll<HTMLElement>(".ext-card-configure").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      const ext = themeExts.find((e) => e.id === id);
-      if (ext) openModal(ext);
+  container
+    .querySelectorAll<HTMLElement>(".ext-card-configure")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const ext = themeExts.find((e) => e.id === id);
+        if (ext) openModal(ext);
+      });
     });
-  });
 
-  container.querySelectorAll<HTMLButtonElement>(".ext-card-apply").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const rawId = btn.dataset.themeId;
-      const id = rawId === "built-in" ? null : rawId ?? null;
-      btn.disabled = true;
-      try {
-        const res = await fetch("/api/theme/active", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
-        });
-        if (!res.ok) throw new Error("Failed");
-        window.location.reload();
-      } catch {
-        btn.disabled = false;
-      }
+  container
+    .querySelectorAll<HTMLButtonElement>(".ext-card-apply")
+    .forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const rawId = btn.dataset.themeId;
+        const id = rawId === "built-in" ? null : (rawId ?? null);
+        btn.disabled = true;
+        try {
+          const res = await fetch("/api/theme/active", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+          if (!res.ok) throw new Error("Failed");
+          window.location.reload();
+        } catch {
+          btn.disabled = false;
+        }
+      });
     });
-  });
 }

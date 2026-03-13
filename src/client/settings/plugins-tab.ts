@@ -1,5 +1,5 @@
 import { escapeHtml, isConfigured } from "../utils/dom";
-import { openModal } from "../modules/modal/modal";
+import { openModal } from "../modules/modals/settings-modal/modal";
 import type { ExtensionMeta, AllExtensions } from "../types";
 
 const _renderPluginCard = (plugin: ExtensionMeta): string => {
@@ -68,25 +68,32 @@ export function initPluginsTab(allExtensions: AllExtensions): void {
   }
   container.innerHTML = html;
 
-  container.querySelectorAll<HTMLInputElement>(".plugin-toggle-input").forEach((input) => {
-    input.addEventListener("change", async () => {
-      const id = input.dataset.id;
-      if (!id) return;
-      const disabled = !input.checked;
-      const res = await fetch(`/api/extensions/${encodeURIComponent(id)}/settings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ disabled: disabled ? "true" : "" }),
+  container
+    .querySelectorAll<HTMLInputElement>(".plugin-toggle-input")
+    .forEach((input) => {
+      input.addEventListener("change", async () => {
+        const id = input.dataset.id;
+        if (!id) return;
+        const disabled = !input.checked;
+        const res = await fetch(
+          `/api/extensions/${encodeURIComponent(id)}/settings`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ disabled: disabled ? "true" : "" }),
+          },
+        );
+        if (res.ok) window.dispatchEvent(new CustomEvent("extensions-saved"));
       });
-      if (res.ok) window.dispatchEvent(new CustomEvent("extensions-saved"));
     });
-  });
 
-  container.querySelectorAll<HTMLElement>(".ext-card-configure").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      const ext = allExtensions.plugins.find((p) => p.id === id);
-      if (ext) openModal(ext);
+  container
+    .querySelectorAll<HTMLElement>(".ext-card-configure")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const ext = allExtensions.plugins.find((p) => p.id === id);
+        if (ext) openModal(ext);
+      });
     });
-  });
 }

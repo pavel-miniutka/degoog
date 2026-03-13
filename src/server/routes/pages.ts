@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import * as cache from "../cache";
+import * as cache from "../utils/cache";
 import {
   getEngineRegistry,
   getDefaultEngineConfig,
@@ -9,10 +9,10 @@ import {
   getActiveTheme,
   getActiveThemeDataAttrs,
 } from "../extensions/themes/registry";
-import { getAllPluginCss, getPluginScriptFolders, getPluginSettingsIds } from "../plugin-assets";
-import { getSettings } from "../plugin-settings";
+import { getAllPluginCss, getPluginScriptFolders, getPluginSettingsIds } from "../utils/plugin-assets";
+import { getSettings } from "../utils/plugin-settings";
 import { shouldServeSettingsGate, getSettingsTokenFromRequest, validateSettingsToken } from "./settings-auth";
-import { isPublicInstance } from "../public-instance";
+import { isPublicInstance } from "../utils/public-instance";
 import pkg from "../../../package.json";
 
 const router = new Hono();

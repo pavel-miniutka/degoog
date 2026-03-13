@@ -1,12 +1,15 @@
-import { initTheme } from "./modules/theme";
-import { initInstallPrompt } from "./modules/installPrompt";
-import { initGeneralTab, initThemeSelectOnly } from "./settings/general-tab";
-import { initEnginesTab } from "./settings/engines-tab";
-import { initPluginsTab } from "./settings/plugins-tab";
-import { initThemesTab } from "./settings/themes-tab";
-import { initStoreTab } from "./settings/store-tab";
-import "./modules/modal/modal";
-import type { AllExtensions } from "./types";
+import { initTheme } from "../../utils/theme";
+import { initInstallPrompt } from "../../utils/install-prompt";
+import {
+  initGeneralTab,
+  initThemeSelectOnly,
+} from "../../settings/general-tab";
+import { initEnginesTab } from "../../settings/engines-tab";
+import { initPluginsTab } from "../../settings/plugins-tab";
+import { initThemesTab } from "../../settings/themes-tab";
+import { initStoreTab } from "../../settings/store-tab";
+import "../modals/settings-modal/modal";
+import type { AllExtensions } from "../../types";
 
 declare global {
   interface Window {

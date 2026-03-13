@@ -1,17 +1,17 @@
-import { performSearch } from "./search";
-import { performTabSearch } from "./tab-search";
-import { showHome } from "./navigation";
-import { initAutocomplete } from "./autocomplete";
-import { initLuckySlot } from "./luckySlot";
-import { initTabs } from "./tabs";
-import { initMediaPreview } from "./mediaPreview";
-import { initTheme } from "./theme";
-import { initTimeFilter } from "./timeFilter";
+import { performSearch } from "../utils/search-actions";
+import { performTabSearch } from "./tabs/tab-search";
+import { showHome } from "../utils/navigation";
+import { initAutocomplete } from "../utils/autocomplete";
+import { initLuckyAnimation } from "../animations/lucky-animation";
+import { initTabs } from "./tabs/tabs";
+import { initMediaPreview } from "./media/media-preview";
+import { initTheme } from "../utils/theme";
+import { initTimeFilter } from "../utils/time-filter";
 
-import { initInstallPrompt } from "./installPrompt";
-import { initSearchBarActions } from "./searchBarActions";
+import { initInstallPrompt } from "../utils/install-prompt";
+import { initSearchBarActions } from "../utils/search-bar-actions";
 
-function _copyToClipboardFallback(text: string, onSuccess: () => void): void {
+function _copyToClipboard(text: string, onSuccess: () => void): void {
   const el = document.createElement("textarea");
   el.value = text;
   el.setAttribute("readonly", "");
@@ -28,16 +28,23 @@ function _copyToClipboardFallback(text: string, onSuccess: () => void): void {
 }
 
 export function init(): void {
-  const searchInput = document.getElementById("search-input") as HTMLInputElement | null;
-  const resultsInput = document.getElementById("results-search-input") as HTMLInputElement | null;
+  const searchInput = document.getElementById(
+    "search-input",
+  ) as HTMLInputElement | null;
+  const resultsInput = document.getElementById(
+    "results-search-input",
+  ) as HTMLInputElement | null;
 
   resultsInput?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && resultsInput) void performSearch(resultsInput.value);
+    if (e.key === "Enter" && resultsInput)
+      void performSearch(resultsInput.value);
   });
 
-  document.getElementById("results-search-btn")?.addEventListener("click", () => {
-    if (resultsInput) void performSearch(resultsInput.value);
-  });
+  document
+    .getElementById("results-search-btn")
+    ?.addEventListener("click", () => {
+      if (resultsInput) void performSearch(resultsInput.value);
+    });
 
   document.querySelector(".results-logo")?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -59,7 +66,7 @@ export function init(): void {
     (q) => void performSearch(q),
   );
   initSearchBarActions();
-  initLuckySlot();
+  initLuckyAnimation();
   initTabs();
   initMediaPreview();
   void initTheme();
@@ -79,11 +86,14 @@ export function init(): void {
       }, 1500);
     };
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(uuid).then(done).catch(() => {
-        _copyToClipboardFallback(uuid, done);
-      });
+      navigator.clipboard
+        .writeText(uuid)
+        .then(done)
+        .catch(() => {
+          _copyToClipboard(uuid, done);
+        });
     } else {
-      _copyToClipboardFallback(uuid, done);
+      _copyToClipboard(uuid, done);
     }
   });
 

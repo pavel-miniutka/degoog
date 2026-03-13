@@ -4,12 +4,8 @@ import type {
   TimeFilter,
   EngineContext,
 } from "../../types";
-
-const GSA_USER_AGENTS = [
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/406.0.862495628 Mobile/15E148 Safari/604.1",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_4_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/406.0.862495628 Mobile/15E148 Safari/604.1",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/398.0.833143299 Mobile/15E148 Safari/604.1",
-];
+import { getRandomGsaAgent } from "../../utils/user-agents";
+import { resolveGoogleTbs } from "../../utils/google-helpers";
 
 interface GoogleImageResult {
   result?: {
@@ -44,19 +40,10 @@ export class GoogleImagesEngine implements SearchEngine {
       async: `_fmt:json,p:1,ijn:${ijn}`,
     });
 
-    if (timeFilter && timeFilter !== "any") {
-      const tbsMap: Record<string, string> = {
-        hour: "qdr:h",
-        day: "qdr:d",
-        week: "qdr:w",
-        month: "qdr:m",
-        year: "qdr:y",
-      };
-      if (tbsMap[timeFilter]) params.set("tbs", tbsMap[timeFilter]);
-    }
+    const tbs = resolveGoogleTbs(timeFilter);
+    if (tbs) params.set("tbs", tbs);
 
-    const ua =
-      GSA_USER_AGENTS[Math.floor(Math.random() * GSA_USER_AGENTS.length)];
+    const ua = getRandomGsaAgent();
     const doFetch = context?.fetch ?? fetch;
     const response = await doFetch(
       `https://www.google.com/search?${params.toString()}`,

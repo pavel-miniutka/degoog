@@ -1,16 +1,26 @@
-import { state } from "../state";
-import { getEngines } from "./engines";
-import { buildSearchUrl, proxyImageUrl } from "../utils/url";
-import { escapeHtml, cleanHostname } from "../utils/dom";
-import type { ScoredResult } from "../types";
+import { state } from "../../state";
+import { getEngines } from "../../utils/engines";
+import { buildSearchUrl, proxyImageUrl } from "../../utils/url";
+import { escapeHtml, cleanHostname } from "../../utils/dom";
+import type { ScoredResult } from "../../types";
 
 let mediaObserver: IntersectionObserver | null = null;
-let appendMediaCardsRef: ((grid: HTMLElement, results: ScoredResult[], type: "image" | "video") => void) | null = null;
+let appendMediaCardsRef:
+  | ((
+      grid: HTMLElement,
+      results: ScoredResult[],
+      type: "image" | "video",
+    ) => void)
+  | null = null;
 let currentMediaIdx = -1;
 let currentCardSelector = "";
 
 export function registerAppendMediaCards(
-  fn: (grid: HTMLElement, results: ScoredResult[], type: "image" | "video") => void,
+  fn: (
+    grid: HTMLElement,
+    results: ScoredResult[],
+    type: "image" | "video",
+  ) => void,
 ): void {
   appendMediaCardsRef = fn;
 }
@@ -24,7 +34,9 @@ export function destroyMediaObserver(): void {
 
 export function setupMediaObserver(type: string): void {
   destroyMediaObserver();
-  const sentinel = document.querySelector<HTMLElement>(".media-scroll-sentinel");
+  const sentinel = document.querySelector<HTMLElement>(
+    ".media-scroll-sentinel",
+  );
   if (!sentinel) return;
 
   mediaObserver = new IntersectionObserver(
@@ -46,8 +58,12 @@ export async function loadMoreMedia(type: string): Promise<void> {
   if (nextPage > lastPg || state.mediaLoading) return;
 
   state.mediaLoading = true;
-  const sentinel = document.querySelector<HTMLElement>(".media-scroll-sentinel");
-  if (sentinel) sentinel.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+  const sentinel = document.querySelector<HTMLElement>(
+    ".media-scroll-sentinel",
+  );
+  if (sentinel)
+    sentinel.innerHTML =
+      '<div class="loading-dots"><span></span><span></span><span></span></div>';
 
   const engines = await getEngines();
   const url = buildSearchUrl(state.currentQuery, engines, type, nextPage);
@@ -67,7 +83,11 @@ export async function loadMoreMedia(type: string): Promise<void> {
         type === "images" ? ".image-grid" : ".video-grid",
       );
       if (grid && appendMediaCardsRef) {
-        appendMediaCardsRef(grid, data.results, type === "images" ? "image" : "video");
+        appendMediaCardsRef(
+          grid,
+          data.results,
+          type === "images" ? "image" : "video",
+        );
       }
     }
   } finally {
@@ -76,9 +96,15 @@ export async function loadMoreMedia(type: string): Promise<void> {
   }
 }
 
-export function openMediaPreview(item: ScoredResult, idx: number, cardSelector: string): void {
+export function openMediaPreview(
+  item: ScoredResult,
+  idx: number,
+  cardSelector: string,
+): void {
   const panel = document.getElementById("media-preview-panel");
-  const img = document.getElementById("media-preview-img") as HTMLImageElement | null;
+  const img = document.getElementById(
+    "media-preview-img",
+  ) as HTMLImageElement | null;
   const info = document.getElementById("media-preview-info");
 
   currentMediaIdx = idx;
@@ -95,8 +121,12 @@ export function openMediaPreview(item: ScoredResult, idx: number, cardSelector: 
 
   panel?.classList.add("open");
 
-  document.querySelectorAll<HTMLElement>(cardSelector).forEach((c) => c.classList.remove("selected"));
-  document.querySelector<HTMLElement>(`${cardSelector}[data-idx="${idx}"]`)?.classList.add("selected");
+  document
+    .querySelectorAll<HTMLElement>(cardSelector)
+    .forEach((c) => c.classList.remove("selected"));
+  document
+    .querySelector<HTMLElement>(`${cardSelector}[data-idx="${idx}"]`)
+    ?.classList.add("selected");
 
   _updateNavButtons();
 }
@@ -104,22 +134,44 @@ export function openMediaPreview(item: ScoredResult, idx: number, cardSelector: 
 function _updateNavButtons(): void {
   const prevBtn = document.getElementById("media-preview-prev");
   const nextBtn = document.getElementById("media-preview-next");
-  if (prevBtn) (prevBtn as HTMLButtonElement).disabled = !_findColumnTarget(currentCardSelector, currentMediaIdx, -1);
-  if (nextBtn) (nextBtn as HTMLButtonElement).disabled = !_findColumnTarget(currentCardSelector, currentMediaIdx, 1);
+  if (prevBtn)
+    (prevBtn as HTMLButtonElement).disabled = !_findColumnTarget(
+      currentCardSelector,
+      currentMediaIdx,
+      -1,
+    );
+  if (nextBtn)
+    (nextBtn as HTMLButtonElement).disabled = !_findColumnTarget(
+      currentCardSelector,
+      currentMediaIdx,
+      1,
+    );
 }
 
 const _visibleCards = (parent: Element, selector: string): HTMLElement[] =>
-  Array.from(parent.querySelectorAll<HTMLElement>(selector)).filter((c) => c.offsetParent !== null);
+  Array.from(parent.querySelectorAll<HTMLElement>(selector)).filter(
+    (c) => c.offsetParent !== null,
+  );
 
-const _findColumnTarget = (selector: string, idx: number, direction: -1 | 1): HTMLElement | null => {
-  const currentCard = document.querySelector<HTMLElement>(`${selector}[data-idx="${idx}"]`);
+const _findColumnTarget = (
+  selector: string,
+  idx: number,
+  direction: -1 | 1,
+): HTMLElement | null => {
+  const currentCard = document.querySelector<HTMLElement>(
+    `${selector}[data-idx="${idx}"]`,
+  );
   if (!currentCard) return null;
 
-  const column = currentCard.closest(".image-column, .video-column") as HTMLElement | null;
+  const column = currentCard.closest(
+    ".image-column, .video-column",
+  ) as HTMLElement | null;
   if (!column) {
     const newIdx = idx + direction;
     if (newIdx < 0 || newIdx >= state.currentResults.length) return null;
-    return document.querySelector<HTMLElement>(`${selector}[data-idx="${newIdx}"]`);
+    return document.querySelector<HTMLElement>(
+      `${selector}[data-idx="${newIdx}"]`,
+    );
   }
 
   const grid = column.parentElement;
@@ -151,7 +203,11 @@ const _findColumnTarget = (selector: string, idx: number, direction: -1 | 1): HT
 };
 
 export function navigateMediaPreview(direction: -1 | 1): void {
-  const target = _findColumnTarget(currentCardSelector, currentMediaIdx, direction);
+  const target = _findColumnTarget(
+    currentCardSelector,
+    currentMediaIdx,
+    direction,
+  );
   if (!target) return;
 
   const newIdx = parseInt(target.dataset.idx!, 10);
@@ -163,8 +219,8 @@ export function navigateMediaPreview(direction: -1 | 1): void {
 
 export function closeMediaPreview(): void {
   document.getElementById("media-preview-panel")?.classList.remove("open");
-  document.querySelectorAll<HTMLElement>(".image-card, .video-card").forEach((c) =>
-    c.classList.remove("selected"),
-  );
+  document
+    .querySelectorAll<HTMLElement>(".image-card, .video-card")
+    .forEach((c) => c.classList.remove("selected"));
   currentMediaIdx = -1;
 }
