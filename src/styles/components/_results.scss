@@ -71,6 +71,10 @@
 
   @media (min-width: 768px) { padding: 0 20px; }
   @media (min-width: 1200px) { padding: 0 150px; }
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .results-tab {
