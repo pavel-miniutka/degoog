@@ -191,6 +191,7 @@ router.post("/api/settings/general", async (c) => {
     "rateLimitBurstMax",
     "rateLimitLongWindow",
     "rateLimitLongMax",
+    "languages",
   ];
   const updates: Record<string, string> = {};
   for (const key of allowed) {

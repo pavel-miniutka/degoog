@@ -6,7 +6,7 @@ import { initLuckyAnimation } from "../animations/lucky-animation";
 import { initTabs } from "./tabs/tabs";
 import { initMediaPreview } from "./media/media-preview";
 import { initTheme } from "../utils/theme";
-import { initTimeFilter } from "../utils/time-filter";
+import { initOptionsDropdown } from "../utils/time-filter";
 
 import { initInstallPrompt } from "../utils/install-prompt";
 import { initSearchBarActions } from "../utils/search-bar-actions";
@@ -70,7 +70,7 @@ export function init(): void {
   initTabs();
   initMediaPreview();
   void initTheme();
-  initTimeFilter();
+  initOptionsDropdown();
   initInstallPrompt();
 
   document.body.addEventListener("click", (e) => {

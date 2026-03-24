@@ -58,6 +58,10 @@ export async function initGeneralTab(
     "settings-rate-limit-long-max",
   ) as HTMLInputElement | null;
 
+  const languagesTextarea = document.getElementById(
+    "settings-languages",
+  ) as HTMLTextAreaElement | null;
+
   if (proxyEnabled && proxyUrlsWrap && proxyUrls) {
     try {
       const res = await fetch("/api/settings/general", {
@@ -72,7 +76,9 @@ export async function initGeneralTab(
           rateLimitBurstMax?: string;
           rateLimitLongWindow?: string;
           rateLimitLongMax?: string;
+          languages?: string;
         };
+        if (languagesTextarea) languagesTextarea.value = data.languages ?? "";
         proxyEnabled.checked = data.proxyEnabled === "true";
         proxyUrls.value = data.proxyUrls ?? "";
         proxyUrlsWrap.style.display = proxyEnabled.checked ? "block" : "none";
@@ -146,6 +152,7 @@ export async function initGeneralTab(
             body: JSON.stringify({
               proxyEnabled: proxyEnabled.checked ? "true" : "false",
               proxyUrls: proxyUrls.value.trim(),
+              languages: languagesTextarea?.value.trim() ?? "",
               ..._rateLimitPayload(),
             }),
           });

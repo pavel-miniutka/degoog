@@ -74,6 +74,9 @@ export interface AppState {
   videoPage: number;
   videoLastPage: number;
   currentTimeFilter: string;
+  customDateFrom: string;
+  customDateTo: string;
+  currentLanguage: string;
   mediaLoading: boolean;
   currentBangQuery: string;
 }

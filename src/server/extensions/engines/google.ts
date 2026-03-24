@@ -8,8 +8,9 @@ import type {
 import { getRandomGsaAgent } from "../../utils/user-agents";
 import {
   resolveGoogleTbs,
+  resolveGoogleCustomDateTbs,
   resolveGoogleHref,
-} from "../../utils/google-helpers";
+} from "../../utils/google-utils";
 
 export class GoogleEngine implements SearchEngine {
   name = "Google";
@@ -22,18 +23,21 @@ export class GoogleEngine implements SearchEngine {
     context?: EngineContext,
   ): Promise<SearchResult[]> {
     const start = (page - 1) * 10;
+    const lang = context?.lang || "en";
 
     const params = new URLSearchParams({
       q: query,
-      hl: "en",
-      lr: "lang_en",
+      hl: lang,
+      lr: `lang_${lang}`,
       ie: "utf8",
       oe: "utf8",
       start: String(start),
       filter: "0",
     });
 
-    const tbs = resolveGoogleTbs(timeFilter);
+    const tbs = timeFilter === "custom"
+      ? resolveGoogleCustomDateTbs(context?.dateFrom, context?.dateTo)
+      : resolveGoogleTbs(timeFilter);
     if (tbs) params.set("tbs", tbs);
 
     const url = `https://www.google.com/search?${params.toString()}`;
@@ -41,9 +45,8 @@ export class GoogleEngine implements SearchEngine {
     const response = await doFetch(url, {
       headers: {
         "User-Agent": getRandomGsaAgent(),
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
         Cookie: "CONSENT=YES+",
       },
       redirect: "follow",
@@ -53,11 +56,7 @@ export class GoogleEngine implements SearchEngine {
     const $ = cheerio.load(html);
     const results: SearchResult[] = [];
 
-    const pushResult = (
-      title: string,
-      href: string,
-      snippet: string,
-    ): boolean => {
+    const pushResult = (title: string, href: string, snippet: string): boolean => {
       const url = resolveGoogleHref(href);
       if (title && url && url.startsWith("http") && !url.includes("google.com/search")) {
         results.push({ title, url, snippet, source: this.name });

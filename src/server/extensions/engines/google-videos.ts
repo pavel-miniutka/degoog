@@ -8,8 +8,9 @@ import type {
 import { getRandomGsaAgent } from "../../utils/user-agents";
 import {
   resolveGoogleTbs,
+  resolveGoogleCustomDateTbs,
   resolveGoogleHref,
-} from "../../utils/google-helpers";
+} from "../../utils/google-utils";
 
 const _ytThumbnail = (href: string): string => {
   const match = href.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
@@ -27,17 +28,20 @@ export class GoogleVideosEngine implements SearchEngine {
   ): Promise<SearchResult[]> {
     const start = (page - 1) * 20;
 
+    const lang = context?.lang || "en";
     const params = new URLSearchParams({
       q: query,
       udm: "7",
-      hl: "en",
+      hl: lang,
       ie: "utf8",
       oe: "utf8",
       start: String(start),
       filter: "0",
     });
 
-    const tbs = resolveGoogleTbs(timeFilter);
+    const tbs = timeFilter === "custom"
+      ? resolveGoogleCustomDateTbs(context?.dateFrom, context?.dateTo)
+      : resolveGoogleTbs(timeFilter);
     if (tbs) params.set("tbs", tbs);
 
     const doFetch = context?.fetch ?? fetch;
@@ -46,9 +50,8 @@ export class GoogleVideosEngine implements SearchEngine {
       {
         headers: {
           "User-Agent": getRandomGsaAgent(),
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
           Cookie: "CONSENT=YES+",
         },
         redirect: "follow",

@@ -17,8 +17,10 @@ export class BingImagesEngine implements SearchEngine {
     context?: EngineContext,
   ): Promise<SearchResult[]> {
     const first = (page - 1) * 60;
+    const lang = context?.lang;
     let url = `https://www.bing.com/images/search?q=${encodeURIComponent(query)}&count=60&first=${first}`;
-    if (timeFilter && timeFilter !== "any") {
+    if (lang) url += `&setlang=${lang}`;
+    if (timeFilter && timeFilter !== "any" && timeFilter !== "custom") {
       const freshMap: Record<string, string> = {
         hour: "Hour",
         day: "Day",
@@ -33,9 +35,8 @@ export class BingImagesEngine implements SearchEngine {
     const response = await doFetch(url, {
       headers: {
         "User-Agent": getRandomUserAgent(),
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
         "Sec-Fetch-Dest": "document",
         "Sec-Fetch-Mode": "navigate",

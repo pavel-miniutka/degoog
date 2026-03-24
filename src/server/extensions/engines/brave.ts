@@ -15,14 +15,13 @@ const TIME_RANGE_MAP: Record<string, string> = {
   year: "py",
 };
 
-function buildCookieString(): string {
-  const parts = [
-    "safesearch=moderate",
-    "useLocation=0",
-    "summarizer=0",
-    "country=us",
-    "ui_lang=en-us",
-  ];
+function buildCookieString(lang?: string): string {
+  const parts = ["safesearch=moderate", "useLocation=0", "summarizer=0"];
+  if (lang && lang !== "en") {
+    parts.push(`country=${lang}`, `ui_lang=${lang}-${lang}`);
+  } else {
+    parts.push("country=us", "ui_lang=en-us");
+  }
   return parts.join("; ");
 }
 
@@ -43,7 +42,7 @@ export class BraveEngine implements SearchEngine {
     if (page > 1) {
       args.offset = String(page - 1);
     }
-    if (timeFilter && timeFilter !== "any" && TIME_RANGE_MAP[timeFilter]) {
+    if (timeFilter && timeFilter !== "any" && timeFilter !== "custom" && TIME_RANGE_MAP[timeFilter]) {
       args.tf = TIME_RANGE_MAP[timeFilter];
     }
     const url = `${BASE_URL}search?${new URLSearchParams(args).toString()}`;
@@ -53,10 +52,9 @@ export class BraveEngine implements SearchEngine {
       headers: {
         "User-Agent": getRandomUserAgent(),
         "Accept-Encoding": "gzip, deflate",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        Cookie: buildCookieString(),
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
+        Cookie: buildCookieString(context?.lang),
       },
       redirect: "follow",
     });
