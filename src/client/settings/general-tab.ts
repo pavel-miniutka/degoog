@@ -58,6 +58,10 @@ export async function initGeneralTab(
     "settings-rate-limit-long-max",
   ) as HTMLInputElement | null;
 
+  const languagesEnabled = document.getElementById(
+    "settings-languages-enabled",
+  ) as HTMLInputElement | null;
+  const languagesWrap = document.getElementById("settings-languages-wrap");
   const languagesTextarea = document.getElementById(
     "settings-languages",
   ) as HTMLTextAreaElement | null;
@@ -76,8 +80,13 @@ export async function initGeneralTab(
           rateLimitBurstMax?: string;
           rateLimitLongWindow?: string;
           rateLimitLongMax?: string;
+          languagesEnabled?: string;
           languages?: string;
         };
+        if (languagesEnabled && languagesWrap) {
+          languagesEnabled.checked = data.languagesEnabled === "true";
+          languagesWrap.style.display = languagesEnabled.checked ? "block" : "none";
+        }
         if (languagesTextarea) languagesTextarea.value = data.languages ?? "";
         proxyEnabled.checked = data.proxyEnabled === "true";
         proxyUrls.value = data.proxyUrls ?? "";
@@ -100,6 +109,11 @@ export async function initGeneralTab(
     } catch {}
     proxyEnabled.addEventListener("change", () => {
       proxyUrlsWrap.style.display = proxyEnabled?.checked ? "block" : "none";
+    });
+  }
+  if (languagesEnabled && languagesWrap) {
+    languagesEnabled.addEventListener("change", () => {
+      languagesWrap.style.display = languagesEnabled.checked ? "block" : "none";
     });
   }
   if (rateLimitEnabled && rateLimitOptions) {
@@ -152,6 +166,7 @@ export async function initGeneralTab(
             body: JSON.stringify({
               proxyEnabled: proxyEnabled.checked ? "true" : "false",
               proxyUrls: proxyUrls.value.trim(),
+              languagesEnabled: languagesEnabled?.checked ? "true" : "false",
               languages: languagesTextarea?.value.trim() ?? "",
               ..._rateLimitPayload(),
             }),

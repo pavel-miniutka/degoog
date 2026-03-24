@@ -482,6 +482,9 @@ router.get("/api/tab-search", async (c) => {
 
 router.get("/api/settings/languages", async (c) => {
   const settings = await getSettings(DEGOOG_SETTINGS_ID);
+  if (asString(settings["languagesEnabled"] ?? "") !== "true") {
+    return c.json({ languages: DEFAULT_LANGUAGES });
+  }
   const raw = asString(settings["languages"] ?? "");
   const codes = raw
     .split(/[\n,]/)

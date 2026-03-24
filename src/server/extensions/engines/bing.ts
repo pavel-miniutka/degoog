@@ -31,7 +31,10 @@ export class BingEngine implements SearchEngine {
       };
       if (freshMap[timeFilter])
         url += `&filters=ex1%3a"ez5_${freshMap[timeFilter]}_TimeCustom"`;
-    } else if (timeFilter === "custom" && (context?.dateFrom || context?.dateTo)) {
+    } else if (
+      timeFilter === "custom" &&
+      (context?.dateFrom || context?.dateTo)
+    ) {
       const from = context?.dateFrom ?? "";
       const to = context?.dateTo ?? "";
       url += `&filters=${encodeURIComponent(`ex1:"ez5_Custom_TimeCustom" ex2:"CustomDate|${from}_${to}"`)}`;
@@ -40,8 +43,12 @@ export class BingEngine implements SearchEngine {
     const response = await doFetch(url, {
       headers: {
         "User-Agent": getRandomUserAgent(),
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language":
+          context?.buildAcceptLanguage?.() ||
+          process.env.DEGOOG_DEFAULT_SEARCH_LANGUAGE ||
+          "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
         "Sec-Fetch-Dest": "document",
         "Sec-Fetch-Mode": "navigate",

@@ -39,9 +39,10 @@ export class GoogleVideosEngine implements SearchEngine {
       filter: "0",
     });
 
-    const tbs = timeFilter === "custom"
-      ? resolveGoogleCustomDateTbs(context?.dateFrom, context?.dateTo)
-      : resolveGoogleTbs(timeFilter);
+    const tbs =
+      timeFilter === "custom"
+        ? resolveGoogleCustomDateTbs(context?.dateFrom, context?.dateTo)
+        : resolveGoogleTbs(timeFilter);
     if (tbs) params.set("tbs", tbs);
 
     const doFetch = context?.fetch ?? fetch;
@@ -50,8 +51,12 @@ export class GoogleVideosEngine implements SearchEngine {
       {
         headers: {
           "User-Agent": getRandomGsaAgent(),
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "Accept-Language": context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language":
+            context?.buildAcceptLanguage?.() ||
+            process.env.DEGOOG_DEFAULT_SEARCH_LANGUAGE ||
+            "en-US,en;q=0.9",
           Cookie: "CONSENT=YES+",
         },
         redirect: "follow",

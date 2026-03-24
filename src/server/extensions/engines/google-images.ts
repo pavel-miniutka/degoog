@@ -5,7 +5,10 @@ import type {
   EngineContext,
 } from "../../types";
 import { getRandomGsaAgent } from "../../utils/user-agents";
-import { resolveGoogleTbs, resolveGoogleCustomDateTbs } from "../../utils/google-utils";
+import {
+  resolveGoogleTbs,
+  resolveGoogleCustomDateTbs,
+} from "../../utils/google-utils";
 
 interface GoogleImageResult {
   result?: {
@@ -40,9 +43,10 @@ export class GoogleImagesEngine implements SearchEngine {
       async: `_fmt:json,p:1,ijn:${ijn}`,
     });
 
-    const tbs = timeFilter === "custom"
-      ? resolveGoogleCustomDateTbs(context?.dateFrom, context?.dateTo)
-      : resolveGoogleTbs(timeFilter);
+    const tbs =
+      timeFilter === "custom"
+        ? resolveGoogleCustomDateTbs(context?.dateFrom, context?.dateTo)
+        : resolveGoogleTbs(timeFilter);
     if (tbs) params.set("tbs", tbs);
     if (context?.lang) params.set("hl", context.lang);
 
@@ -54,7 +58,10 @@ export class GoogleImagesEngine implements SearchEngine {
         headers: {
           "User-Agent": ua,
           Accept: "*/*",
-          "Accept-Language": context?.buildAcceptLanguage?.() ?? "en-US,en;q=0.9",
+          "Accept-Language":
+            context?.buildAcceptLanguage?.() ||
+            process.env.DEGOOG_DEFAULT_SEARCH_LANGUAGE ||
+            "en-US,en;q=0.9",
           Cookie: "CONSENT=YES+",
         },
       },
