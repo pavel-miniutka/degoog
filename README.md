@@ -57,6 +57,8 @@ services:
 podman run -d --name degoog -p 4444:4444 -v ./data:/app/data --user 1000:1000 --security-opt label=disable --restart unless-stopped ghcr.io/fccview/degoog:latest
 ```
 
+</details>
+
 <details>
 <summary>Podman Quadlet Container File</summary>
 
