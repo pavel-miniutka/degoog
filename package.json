@@ -20,7 +20,7 @@
     "cheerio": "^1.0.0",
     "hono": "^4.7.0",
     "sass": "^1.85.0",
-    "socks-proxy-agent": "^9.0.0"
+    "socks": "^2.8.7"
   },
   "devDependencies": {
     "@types/bun": "^1.2.0",
