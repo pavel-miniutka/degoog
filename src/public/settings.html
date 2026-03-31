@@ -332,6 +332,64 @@
             </div>
           </section>
 
+          <section class="settings-section" id="settings-section-streaming">
+            <h2 class="settings-section-heading">Streaming results</h2>
+            <p class="settings-desc">
+              Load results progressively as each engine responds instead of
+              waiting for all engines to finish. This is an experimental
+              feature.
+            </p>
+            <label class="settings-toggle-wrap">
+              <input
+                type="checkbox"
+                id="settings-streaming-enabled"
+                class="settings-toggle"
+                aria-label="Enable streaming results (experimental)"
+              />
+              <span class="toggle-slider"></span>
+              <span class="settings-toggle-label"
+                >Enable streaming results (experimental)</span
+              >
+            </label>
+            <div
+              class="settings-streaming-options"
+              id="settings-streaming-options"
+              style="display: none"
+            >
+              <label class="settings-toggle-wrap" style="margin-top: 0.75rem">
+                <input
+                  type="checkbox"
+                  id="settings-streaming-auto-retry"
+                  class="settings-toggle"
+                  aria-label="Auto-retry failed engines"
+                />
+                <span class="toggle-slider"></span>
+                <span class="settings-toggle-label"
+                  >Auto-retry failed engines</span
+                >
+              </label>
+              <div
+                class="settings-streaming-retry-wrap"
+                id="settings-streaming-retry-wrap"
+                style="display: none"
+              >
+                <label
+                  for="settings-streaming-max-retries"
+                  class="settings-proxy-urls-label"
+                  >Max retries per engine</label
+                >
+                <input
+                  type="number"
+                  id="settings-streaming-max-retries"
+                  class="settings-rate-limit-input"
+                  min="1"
+                  max="5"
+                  placeholder="2"
+                />
+              </div>
+            </div>
+          </section>
+
           <section class="settings-section">
             <h2 class="settings-section-heading">Install app</h2>
             <p class="settings-desc">

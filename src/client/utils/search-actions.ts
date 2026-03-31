@@ -12,7 +12,6 @@ import { renderAtAGlance } from "../modules/renderer/render-slots";
 import {
   renderResults,
   renderSidebar,
-  renderSlotPanels,
   clearSlotPanels,
 } from "../modules/renderer/render";
 import { renderMediaEngineBar } from "../modules/renderer/render-media";
@@ -28,9 +27,29 @@ import {
   buildCommandGlanceHtml,
 } from "./search-utils";
 import { skeletonResults, skeletonGlance, skeletonImageGrid, skeletonVideoGrid } from "../animations/skeleton";
-import { SlotPanelPosition, type Command, type SearchResponse, type ScoredResult } from "../types";
+import { type Command, type SearchResponse, type ScoredResult } from "../types";
+import { performStreamingSearch, abortStreamingSearch } from "./streaming-search";
 
 let commandsCache: Command[] | null = null;
+let _streamingConfig: { enabled: boolean } | null = null;
+
+const _fetchStreamingConfig = async (): Promise<boolean> => {
+  if (_streamingConfig) return _streamingConfig.enabled;
+  try {
+    const res = await fetch("/api/settings/streaming");
+    if (res.ok) {
+      _streamingConfig = (await res.json()) as { enabled: boolean };
+      return _streamingConfig.enabled;
+    }
+  } catch {}
+  return false;
+};
+
+if (typeof window !== "undefined") {
+  window.addEventListener("extensions-saved", () => {
+    _streamingConfig = null;
+  });
+}
 
 if (typeof window !== "undefined") {
   window.addEventListener("extensions-saved", () => {
@@ -84,6 +103,11 @@ export async function performSearch(
   if (query.trim().startsWith("!")) {
     state.currentQuery = query;
     return _performBangCommand(query, resolvedType, page || 1);
+  }
+
+  if ((!page || page === 1) && await _fetchStreamingConfig()) {
+    abortStreamingSearch();
+    return performStreamingSearch(query, resolvedType, (q) => void performSearch(q));
   }
 
   state.currentQuery = query;
@@ -166,19 +190,12 @@ export async function performSearch(
       renderMediaEngineBar(data.engineTimings ?? []);
       if (sidebar) sidebar.innerHTML = "";
     } else {
-      const sidebarTop =
-        data.slotPanels?.filter((p) => p.position === SlotPanelPosition.KnowledgePanel) ?? [];
-      renderSidebar(data, (q) => void performSearch(q), {
-        sidebarTopPanels: sidebarTop,
-      });
+      renderSidebar(data, (q) => void performSearch(q));
       if (resolvedType === "web") {
-        renderSlotPanels(data.slotPanels || []);
         void fetchGlancePanels(query, data.results, data.atAGlance);
-        if (!data.slotPanels || data.slotPanels.length === 0)
-          void fetchSlotPanels(query);
+        void fetchSlotPanels(query);
       } else {
         if (glanceEl) glanceEl.innerHTML = "";
-        renderSlotPanels(data.slotPanels || []);
       }
     }
     renderResults(data.results);
@@ -216,17 +233,11 @@ async function _performSearchWithBang(
       renderMediaEngineBar(searchData.engineTimings ?? []);
       if (sidebar) sidebar.innerHTML = "";
     } else {
-      const sidebarTop =
-        searchData.slotPanels?.filter((p) => p.position === SlotPanelPosition.KnowledgePanel) ?? [];
-      renderSidebar(searchData, (q) => void performSearch(q), {
-        sidebarTopPanels: sidebarTop,
-      });
+      renderSidebar(searchData, (q) => void performSearch(q));
       if (type === "web") {
-        renderSlotPanels(searchData.slotPanels || []);
         void fetchSlotPanels(query);
       } else {
         if (glanceEl) glanceEl.innerHTML = "";
-        renderSlotPanels(searchData.slotPanels || []);
       }
     }
     renderResults(searchData.results);
@@ -392,12 +403,8 @@ export async function goToPage(pageNum: number): Promise<void> {
     if (state.currentPage === 1 && data.atAGlance) {
       renderAtAGlance(data.atAGlance);
     }
-    if (
-      state.currentType === "web" &&
-      data.slotPanels &&
-      data.slotPanels.length > 0
-    ) {
-      renderSlotPanels(data.slotPanels);
+    if (state.currentType === "web") {
+      void fetchSlotPanels(state.currentQuery);
     }
     renderResults(state.currentResults);
     window.scrollTo(0, 0);
@@ -461,13 +468,7 @@ export async function retryEngine(engineName: string): Promise<void> {
     if (isMediaType && state.currentData) {
       renderMediaEngineBar(state.currentData.engineTimings ?? []);
     } else if (state.currentData) {
-      const sidebarTop =
-        state.currentData.slotPanels?.filter(
-          (p) => p.position === SlotPanelPosition.KnowledgePanel,
-        ) ?? [];
-      renderSidebar(state.currentData, (q) => void performSearch(q), {
-        sidebarTopPanels: sidebarTop,
-      });
+      renderSidebar(state.currentData, (q) => void performSearch(q));
     }
   } catch { }
 }

@@ -72,7 +72,7 @@ const _sortedFromMap = (urlMap: Map<string, ScoredResult>): ScoredResult[] => {
   return scored;
 };
 
-const _fetchRelatedSearches = async (query: string): Promise<string[]> => {
+export const fetchRelatedSearches = async (query: string): Promise<string[]> => {
   try {
     const res = await outgoingFetch(
       `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`,
@@ -90,7 +90,7 @@ const _fetchRelatedSearches = async (query: string): Promise<string[]> => {
   }
 };
 
-const _fetchKnowledgePanel = async (
+export const fetchKnowledgePanel = async (
   query: string,
 ): Promise<KnowledgePanel | null> => {
   try {
@@ -276,17 +276,16 @@ export const search = async (
     };
   }
 
-  const engineStarts = rawActiveEngines.map(() => performance.now());
   const engineContext = _makeEngineContext(lang, dateFrom, dateTo);
 
   const settled = await Promise.allSettled(
-    rawActiveEngines.map(async ({ instance }, i) => {
-      engineStarts[i] = performance.now();
+    rawActiveEngines.map(async ({ instance }) => {
+      const t0 = performance.now();
       const results = await _withTimeout(
         instance.executeSearch(query, p, timeFilter, engineContext),
         ENGINE_TIMEOUT_MS,
       );
-      return results;
+      return { results, elapsed: Math.round(performance.now() - t0) };
     }),
   );
 
@@ -295,18 +294,17 @@ export const search = async (
 
   for (let i = 0; i < settled.length; i++) {
     const result = settled[i];
-    const elapsed = Math.round(performance.now() - engineStarts[i]);
     if (result.status === "fulfilled") {
-      allResults.push({ results: result.value, multiplier: rawActiveEngines[i].score });
+      allResults.push({ results: result.value.results, multiplier: rawActiveEngines[i].score });
       engineTimings.push({
         name: rawActiveEngines[i].instance.name,
-        time: elapsed,
-        resultCount: result.value.length,
+        time: result.value.elapsed,
+        resultCount: result.value.results.length,
       });
     } else {
       engineTimings.push({
         name: rawActiveEngines[i].instance.name,
-        time: elapsed,
+        time: ENGINE_TIMEOUT_MS,
         resultCount: 0,
       });
     }
@@ -321,10 +319,10 @@ export const search = async (
 
   if (type === "web" && p === 1) {
     [relatedSearches, knowledgePanel] = await Promise.all([
-      _withTimeout(_fetchRelatedSearches(query), ENGINE_TIMEOUT_MS).catch(
+      _withTimeout(fetchRelatedSearches(query), ENGINE_TIMEOUT_MS).catch(
         () => [],
       ),
-      _withTimeout(_fetchKnowledgePanel(query), ENGINE_TIMEOUT_MS).catch(
+      _withTimeout(fetchKnowledgePanel(query), ENGINE_TIMEOUT_MS).catch(
         () => null,
       ),
     ]);

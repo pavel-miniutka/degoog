@@ -195,6 +195,9 @@ router.post("/api/settings/general", async (c) => {
     "rateLimitLongMax",
     "languagesEnabled",
     "languages",
+    "streamingEnabled",
+    "streamingAutoRetry",
+    "streamingMaxRetries",
   ];
   const updates: Record<string, string> = {};
   for (const key of allowed) {

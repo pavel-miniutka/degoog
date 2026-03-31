@@ -136,6 +136,20 @@ export async function initGeneralTab(
     "settings-languages",
   ) as HTMLTextAreaElement | null;
 
+  const streamingEnabled = document.getElementById(
+    "settings-streaming-enabled",
+  ) as HTMLInputElement | null;
+  const streamingOptions = document.getElementById("settings-streaming-options");
+  const streamingAutoRetry = document.getElementById(
+    "settings-streaming-auto-retry",
+  ) as HTMLInputElement | null;
+  const streamingRetryWrap = document.getElementById(
+    "settings-streaming-retry-wrap",
+  );
+  const streamingMaxRetries = document.getElementById(
+    "settings-streaming-max-retries",
+  ) as HTMLInputElement | null;
+
   if (proxyEnabled && proxyUrlsWrap && proxyUrls) {
     try {
       const res = await fetch("/api/settings/general", {
@@ -152,6 +166,9 @@ export async function initGeneralTab(
           rateLimitLongMax?: string;
           languagesEnabled?: string;
           languages?: string;
+          streamingEnabled?: string;
+          streamingAutoRetry?: string;
+          streamingMaxRetries?: string;
         };
         if (languagesEnabled && languagesWrap) {
           languagesEnabled.checked = data.languagesEnabled === "true";
@@ -177,6 +194,20 @@ export async function initGeneralTab(
           rateLimitLongWindow.value = data.rateLimitLongWindow ?? "";
         if (rateLimitLongMax)
           rateLimitLongMax.value = data.rateLimitLongMax ?? "";
+        if (streamingEnabled && streamingOptions) {
+          streamingEnabled.checked = data.streamingEnabled === "true";
+          streamingOptions.style.display = streamingEnabled.checked
+            ? "block"
+            : "none";
+        }
+        if (streamingAutoRetry && streamingRetryWrap) {
+          streamingAutoRetry.checked = data.streamingAutoRetry === "true";
+          streamingRetryWrap.style.display = streamingAutoRetry.checked
+            ? "block"
+            : "none";
+        }
+        if (streamingMaxRetries)
+          streamingMaxRetries.value = data.streamingMaxRetries ?? "";
       }
     } catch {}
     proxyEnabled.addEventListener("change", () => {
@@ -192,6 +223,20 @@ export async function initGeneralTab(
   if (rateLimitEnabled && rateLimitOptions) {
     rateLimitEnabled.addEventListener("change", () => {
       rateLimitOptions.style.display = rateLimitEnabled.checked
+        ? "block"
+        : "none";
+    });
+  }
+  if (streamingEnabled && streamingOptions) {
+    streamingEnabled.addEventListener("change", () => {
+      streamingOptions.style.display = streamingEnabled.checked
+        ? "block"
+        : "none";
+    });
+  }
+  if (streamingAutoRetry && streamingRetryWrap) {
+    streamingAutoRetry.addEventListener("change", () => {
+      streamingRetryWrap.style.display = streamingAutoRetry.checked
         ? "block"
         : "none";
     });
@@ -257,6 +302,9 @@ export async function initGeneralTab(
               languagesEnabled: languagesEnabled?.checked ? "true" : "false",
               languages: languagesTextarea?.value.trim() ?? "",
               ..._rateLimitPayload(),
+              streamingEnabled: streamingEnabled?.checked ? "true" : "false",
+              streamingAutoRetry: streamingAutoRetry?.checked ? "true" : "false",
+              streamingMaxRetries: streamingMaxRetries?.value.trim() ?? "",
             }),
           });
         } catch {}

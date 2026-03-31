@@ -565,3 +565,23 @@
     text-decoration: none;
   }
 }
+
+.result-stream-in {
+  animation: resultFadeIn 0.3s ease-out both;
+}
+
+@keyframes resultFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.engine-retrying .engine-stat-meta {
+  color: var(--text-secondary);
+  font-style: italic;
+}
