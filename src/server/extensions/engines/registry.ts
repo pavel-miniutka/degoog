@@ -165,9 +165,7 @@ export function getEngineRegistry(): {
 }[] {
   return [
     ...builtinRegistry,
-    ...pluginEntries
-      .filter((e) => e.searchType === "web" || e.searchType === "news")
-      .map((e) => ({
+    ...pluginEntries.map((e) => ({
         id: e.id,
         displayName: e.displayName,
         disabledByDefault: e.disabledByDefault,
