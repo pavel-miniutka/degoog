@@ -1,6 +1,6 @@
 import { performSearch } from "../utils/search-actions";
 import { performTabSearch } from "./tabs/tab-search";
-import { showHome } from "../utils/navigation";
+import { recordSettingsReturn, showHome } from "../utils/navigation";
 import { initAutocomplete } from "../utils/autocomplete";
 import { initLuckyAnimation } from "../animations/lucky-animation";
 import { initTabs } from "./tabs/tabs";
@@ -37,6 +37,27 @@ function _copyToClipboard(text: string, onSuccess: () => void): void {
 
 export function init(): void {
   renderPageTemplates();
+
+  document.body.addEventListener(
+    "click",
+    (e) => {
+      if (e.defaultPrevented) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
+        return;
+      const a = (e.target as HTMLElement).closest<HTMLAnchorElement>("a[href]");
+      if (!a) return;
+      let url: URL;
+      try {
+        url = new URL(a.href);
+      } catch {
+        return;
+      }
+      if (url.origin !== location.origin) return;
+      if (!url.pathname.startsWith("/settings")) return;
+      recordSettingsReturn();
+    },
+    true,
+  );
 
   const searchInput = document.getElementById(
     "search-input",
