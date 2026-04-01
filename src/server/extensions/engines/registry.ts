@@ -3,12 +3,14 @@ import {
   type SearchType,
   type EngineConfig,
   type ExtensionMeta,
+  type SettingField,
   ExtensionStoreType,
 } from "../../types";
 import {
   getSettings,
   maskSecrets,
   mergeDefaults,
+  asString,
 } from "../../utils/plugin-settings";
 import { debug } from "../../utils/logger";
 import { GoogleEngine } from "./google";
@@ -137,9 +139,7 @@ const builtinMap = Object.fromEntries(
   BUILTIN_DEFINITIONS.map((d) => [d.id, new d.EngineClass()]),
 ) as Record<string, SearchEngine>;
 
-const builtinRegistry = BUILTIN_DEFINITIONS.filter(
-  (d) => d.searchType === "web" || d.searchType === "news",
-).map((d) => ({
+const builtinRegistry = BUILTIN_DEFINITIONS.map((d) => ({
   id: d.id,
   displayName: d.displayName,
   disabledByDefault: d.disabledByDefault,
@@ -165,14 +165,12 @@ export function getEngineRegistry(): {
 }[] {
   return [
     ...builtinRegistry,
-    ...pluginEntries
-      .filter((e) => e.searchType === "web" || e.searchType === "news")
-      .map((e) => ({
-        id: e.id,
-        displayName: e.displayName,
-        disabledByDefault: e.disabledByDefault,
-        searchType: e.searchType,
-      })),
+    ...pluginEntries.map((e) => ({
+      id: e.id,
+      displayName: e.displayName,
+      disabledByDefault: e.disabledByDefault,
+      searchType: e.searchType,
+    })),
   ];
 }
 
@@ -195,15 +193,17 @@ export function getEngineMap(): Record<string, SearchEngine> {
 function engineSearchTypeFromSearchType(
   type: SearchType,
 ): EngineSearchType | null {
-  if (type === "all") return "web";
+  if (type === "web") return "web";
   if (type === "images" || type === "videos" || type === "news") return type;
   return null;
 }
 
-export function getEnginesForCustomType(engineType: string): SearchEngine[] {
+export function getEnginesForCustomType(
+  engineType: string,
+): { id: string; instance: SearchEngine }[] {
   return pluginEntries
     .filter((e) => e.searchType === engineType)
-    .map((e) => e.instance);
+    .map((e) => ({ id: e.id, instance: e.instance }));
 }
 
 const BUILTIN_TYPES = new Set(["web", "news", "images", "videos"]);
@@ -239,7 +239,7 @@ async function hasRequiredConfig(
 export function getEnginesForSearchType(
   type: SearchType,
   config: EngineConfig,
-): SearchEngine[] {
+): { id: string; instance: SearchEngine }[] {
   const engineType = engineSearchTypeFromSearchType(type);
   if (!engineType) return [];
 
@@ -249,41 +249,40 @@ export function getEnginesForSearchType(
   ];
   const engineMap = getEngineMap();
 
-  if (engineType === "web" || engineType === "news") {
-    const active: SearchEngine[] = [];
-    for (const def of allDefinitions) {
-      if (config[def.id]) {
-        const instance = engineMap[def.id];
-        if (instance) active.push(instance);
-      }
+  const active: { id: string; instance: SearchEngine }[] = [];
+  for (const def of allDefinitions) {
+    if (config[def.id]) {
+      const instance = engineMap[def.id];
+      if (instance) active.push({ id: def.id, instance });
     }
-    return active;
   }
-
-  return allDefinitions.map((d) => engineMap[d.id]).filter(Boolean);
+  return active;
 }
 
-export async function getActiveWebEngines(
+export const getActiveWebEngines = async (
   config: EngineConfig,
-): Promise<SearchEngine[]> {
+): Promise<{ id: string; instance: SearchEngine; score: number }[]> => {
   const allDefinitions = [
     ...BUILTIN_DEFINITIONS.filter((d) => d.searchType === "web"),
     ...pluginEntries.filter((e) => e.searchType === "web"),
   ];
   const engineMap = getEngineMap();
-  const active: SearchEngine[] = [];
+  const active: { id: string; instance: SearchEngine; score: number }[] = [];
   for (const def of allDefinitions) {
     if (!config[def.id]) continue;
     const instance = engineMap[def.id];
     if (!instance) continue;
-    if (!engineRequiresConfig(instance)) {
-      active.push(instance);
+    if (
+      engineRequiresConfig(instance) &&
+      !(await hasRequiredConfig(def.id, instance))
+    )
       continue;
-    }
-    if (await hasRequiredConfig(def.id, instance)) active.push(instance);
+    const stored = await getSettings(def.id);
+    const score = Math.max(parseFloat(asString(stored["score"])) || 1, 0.1);
+    active.push({ id: def.id, instance, score });
   }
   return active;
-}
+};
 
 export function getDefaultEngineConfig(): Record<string, boolean> {
   const entries = getEngineRegistry();
@@ -297,6 +296,39 @@ export function getDefaultEngineConfig(): Record<string, boolean> {
       return [e.id, !disabledByDefault];
     }),
   );
+}
+
+const SCORE_FIELD: SettingField = {
+  key: "score",
+  label: "Score",
+  type: "number",
+  default: "1",
+  description:
+    "Result ranking multiplier for this engine. Higher values favour its results.",
+  advanced: true,
+};
+
+const OUTGOING_TRANSPORT_FIELD: SettingField = {
+  key: "outgoingTransport",
+  label: "Outgoing HTTP client",
+  type: "select",
+  options: ["fetch", "curl", "auto"],
+  default: "fetch",
+  description:
+    "fetch: runtime client | curl: system binary (different TLS) | auto: retry with curl on 403, 429, 502, or 503 | curl and auto need curl on the server PATH.",
+  advanced: true,
+};
+
+export function getEngineIdByInstance(
+  instance: SearchEngine,
+): string | undefined {
+  for (const d of BUILTIN_DEFINITIONS) {
+    if (builtinMap[d.id] === instance) return d.id;
+  }
+  for (const e of pluginEntries) {
+    if (e.instance === instance) return e.id;
+  }
+  return undefined;
 }
 
 export async function getEngineExtensionMeta(): Promise<ExtensionMeta[]> {
@@ -316,8 +348,16 @@ export async function getEngineExtensionMeta(): Promise<ExtensionMeta[]> {
   const defaults = getDefaultEngineConfig();
   for (const def of allDefs) {
     const instance = engineMap[def.id];
-    const schema = instance?.settingsSchema ?? [];
-    const rawSettings = schema.length > 0 ? await getSettings(def.id) : {};
+    const engineSchema = instance?.settingsSchema ?? [];
+    const engineSchemaFiltered = engineSchema.filter(
+      (f) => f.key !== "outgoingTransport",
+    );
+    const schema: SettingField[] = [
+      SCORE_FIELD,
+      OUTGOING_TRANSPORT_FIELD,
+      ...engineSchemaFiltered,
+    ];
+    const rawSettings = await getSettings(def.id);
     const maskedSettings = maskSecrets(rawSettings, schema);
 
     results.push({
@@ -325,7 +365,7 @@ export async function getEngineExtensionMeta(): Promise<ExtensionMeta[]> {
       displayName: def.displayName,
       description: `${def.searchType} search engine`,
       type: ExtensionStoreType.Engine,
-      configurable: schema.length > 0,
+      configurable: true,
       settingsSchema: schema,
       settings: maskedSettings,
       defaultEnabled: defaults[def.id],
@@ -352,9 +392,7 @@ export async function initEngines(): Promise<void> {
     const instance = builtinMap[def.id];
     if (instance?.configure && instance.settingsSchema?.length) {
       const stored = await getSettings(def.id);
-      instance.configure(
-        mergeDefaults(stored, instance.settingsSchema),
-      );
+      instance.configure(mergeDefaults(stored, instance.settingsSchema));
     }
   }
 
@@ -412,9 +450,7 @@ export async function initEngines(): Promise<void> {
             : undefined;
         if (instance.configure && instance.settingsSchema?.length) {
           const stored = await getSettings(id);
-          instance.configure(
-            mergeDefaults(stored, instance.settingsSchema),
-          );
+          instance.configure(mergeDefaults(stored, instance.settingsSchema));
         }
         pluginEntries.push({
           id,

@@ -2,7 +2,7 @@ import type { AppState } from "./types";
 
 export const state: AppState = {
   currentQuery: "",
-  currentType: "all",
+  currentType: "web",
   currentPage: 1,
   lastPage: 10,
   currentResults: [],
@@ -18,4 +18,6 @@ export const state: AppState = {
   mediaLoading: false,
   currentBangQuery: "",
   openInNewTab: false,
+  displayEnginePerformance: true,
+  displaySearchSuggestions: true,
 };

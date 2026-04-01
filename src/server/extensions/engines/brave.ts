@@ -36,6 +36,7 @@ export class BraveEngine implements SearchEngine {
       label: "Safe Search",
       type: "select",
       options: ["off", "moderate", "strict"],
+      default: "moderate",
       description: "Filter explicit content from search results.",
     },
   ];

@@ -1,6 +1,22 @@
-import { fetch as undiciFetch, ProxyAgent } from "undici";
+/**
+ * @fccview here
+ * scraping is a crazy business. This shit is hard.
+ * For example, our big G has very strict TLS policies, which means sometimes it'll
+ * randomly block bun's fetch.
+ *
+ * The best solution I could come up with is to use curl binaries as fallback for requests.
+ * Until/if bun implements TLS pinning, this is the best we can do.
+ *
+ * Also bun doesn't support socks5 proxies, so we use a separate library for that. How fun.
+ *
+ */
+
+import { fetch as bunFetch } from "bun";
 import { getSettings } from "./plugin-settings";
 import { debug } from "./logger";
+import { isSocksProxy, fetchViaSocks } from "./socks-fetch";
+import { fetchViaHttpProxy } from "./http-proxy-fetch";
+import { fetchViaCurl } from "./curl-fetch";
 
 export interface OutgoingFetchOptions {
   method?: string;
@@ -11,6 +27,15 @@ export interface OutgoingFetchOptions {
 }
 
 const DEGOOG_SETTINGS_ID = "degoog-settings";
+
+export type OutgoingTransport = "fetch" | "curl" | "auto";
+
+export function parseOutgoingTransport(
+  raw: string | undefined,
+): OutgoingTransport {
+  if (raw === "curl" || raw === "auto") return raw;
+  return "fetch";
+}
 
 let allowedHosts: Set<string> | null = null;
 
@@ -38,6 +63,10 @@ function parseProxyUrls(raw: string): string[] {
     .filter(Boolean);
 }
 
+function shouldRetryWithCurl(status: number): boolean {
+  return status === 429 || status === 403 || status === 502 || status === 503;
+}
+
 export function isUrlAllowedForOutgoing(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -56,8 +85,10 @@ export function isUrlAllowedForOutgoing(url: string): boolean {
 export async function outgoingFetch(
   url: string,
   options: OutgoingFetchOptions = {},
+  transport: OutgoingTransport = "fetch",
 ): Promise<Response> {
   const settings = await getSettings(DEGOOG_SETTINGS_ID);
+
   const enabled = settings.proxyEnabled === "true";
   const proxyUrlsRaw = settings.proxyUrls;
   const urls = parseProxyUrls(
@@ -71,20 +102,45 @@ export async function outgoingFetch(
   const headers = options.headers;
   const body = options.body;
 
-  if (!useProxy) {
-    debug("outgoing", `direct fetch ${new URL(url).hostname}`);
-    return fetch(url, { method, redirect, signal, headers, body });
+  const proxyUrl = useProxy ? urls[proxyIndex++ % urls.length] : undefined;
+
+  const nativeFetch = async (): Promise<Response> => {
+    if (!useProxy) {
+      debug("outgoing", `direct fetch ${new URL(url).hostname}`);
+      return bunFetch(url, { method, redirect, signal, headers, body });
+    }
+    debug("outgoing", `via proxy ${proxyUrl} -> ${new URL(url).hostname}`);
+
+    if (isSocksProxy(proxyUrl!)) {
+      return fetchViaSocks(url, proxyUrl!, {
+        method,
+        redirect,
+        signal,
+        headers,
+        body: body ?? undefined,
+      });
+    }
+
+    return fetchViaHttpProxy(url, proxyUrl!, {
+      method,
+      redirect,
+      signal,
+      headers,
+      body: body ?? undefined,
+    });
+  };
+
+  if (transport === "curl") {
+    debug("outgoing", `curl ${new URL(url).hostname}`);
+    return fetchViaCurl(url, options, proxyUrl);
   }
 
-  const proxyUrl = urls[proxyIndex++ % urls.length];
-  debug("outgoing", `via proxy ${proxyUrl} -> ${new URL(url).hostname}`);
-  const agent = new ProxyAgent(proxyUrl);
-  return undiciFetch(url, {
-    method,
-    redirect,
-    signal,
-    headers,
-    body: body ?? undefined,
-    dispatcher: agent,
-  }) as unknown as Promise<Response>;
+  const first = await nativeFetch();
+
+  if (transport === "auto" && shouldRetryWithCurl(first.status)) {
+    debug("outgoing", `auto curl retry ${new URL(url).hostname}`);
+    return fetchViaCurl(url, options, proxyUrl);
+  }
+
+  return first;
 }

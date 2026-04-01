@@ -17,12 +17,14 @@ export enum ExtensionStoreType {
 export interface SettingField {
   key: string;
   label: string;
-  type: "text" | "password" | "url" | "toggle" | "textarea" | "select";
+  type: "text" | "number" | "password" | "url" | "toggle" | "textarea" | "select";
   required?: boolean;
   placeholder?: string;
   description?: string;
   secret?: boolean;
   options?: string[];
+  default?: string;
+  advanced?: boolean;
 }
 
 export interface ExtensionMeta {
@@ -67,7 +69,7 @@ export interface SearchEngine {
   ): Promise<SearchResult[]>;
 }
 
-export type SearchType = "all" | "images" | "videos" | "news";
+export type SearchType = "web" | "images" | "videos" | "news";
 export type TimeFilter = "any" | "hour" | "day" | "week" | "month" | "year" | "custom";
 
 export interface EngineTiming {

@@ -1,3 +1,5 @@
+import { clearSettingsReturn } from "./navigation";
+
 const REQUEST_KEY = "degoog_request_install";
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
@@ -54,5 +56,6 @@ export function requestInstallPrompt(): void {
   try {
     localStorage.setItem(REQUEST_KEY, "1");
   } catch {}
+  clearSettingsReturn();
   window.location.href = "/";
 }

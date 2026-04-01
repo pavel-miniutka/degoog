@@ -1,10 +1,20 @@
 import { Hono, type Context } from "hono";
 import * as cache from "../utils/cache";
-import { search, searchSingleEngine, mergeNewResults } from "../search";
+import {
+  search,
+  searchSingleEngine,
+  scoreResults,
+  mergeNewResults,
+  fetchRelatedSearches,
+  fetchKnowledgePanel,
+  createSearchEngineContext,
+} from "../search";
 import {
   getEngineRegistry,
   getEnginesForCustomType,
   getCustomEngineTypes,
+  getActiveWebEngines,
+  getEnginesForSearchType as getEnginesForType,
 } from "../extensions/engines/registry";
 import { getSlotPlugins } from "../extensions/slots/registry";
 import {
@@ -15,6 +25,7 @@ import { asString, getSettings, isDisabled } from "../utils/plugin-settings";
 import { getClientIp } from "../utils/request";
 import { outgoingFetch } from "../utils/outgoing";
 import { checkRateLimit } from "../utils/rate-limit";
+import { debug } from "../utils/logger";
 import {
   SLOT_POSITION_SETTING_KEY,
   SlotPanelPosition,
@@ -112,7 +123,9 @@ async function runSlotPlugins(
         results,
         fetch: outgoingFetch as SlotPluginContext["fetch"],
       };
+      const t0 = performance.now();
       const out = await plugin.execute(query, context);
+      debug("plugin", `${plugin.id} executed in ${Math.round(performance.now() - t0)}ms`);
       if (!out.html || !out.html.trim()) continue;
       panels.push({
         id: plugin.id,
@@ -128,7 +141,7 @@ async function runSlotPlugins(
 router.get("/api/search", async (c) => {
   const limitRes = await _applyRateLimit(c);
   if (limitRes) return limitRes;
-  const searchType = (c.req.query("type") || "all") as SearchType;
+  const searchType = (c.req.query("type") || "web") as SearchType;
   let query = c.req.query("q") ?? "";
   if (typeof query !== "string") query = "";
   if (!query.trim())
@@ -159,18 +172,212 @@ router.get("/api/search", async (c) => {
     cache.set(key, response, ttl);
   }
 
-  if (searchType === "all") {
-    const clientIp = getClientIp(c);
-    const slotPanels = await runSlotPlugins(
-      query.trim(),
-      clientIp ?? undefined,
-      response.results,
-      { excludePosition: SlotPanelPosition.AtAGlance },
-    );
-    response = { ...response, slotPanels };
+  return c.json(response);
+});
+
+router.get("/api/search/stream", async (c) => {
+  const limitRes = await _applyRateLimit(c);
+  if (limitRes) return limitRes;
+  const searchType = (c.req.query("type") || "web") as SearchType;
+  let query = c.req.query("q") ?? "";
+  if (typeof query !== "string") query = "";
+  if (!query.trim())
+    return c.json({ error: "Missing query parameter 'q'" }, 400);
+
+  const engines = parseEngineConfig(new URL(c.req.url).searchParams);
+  const page = Math.max(
+    1,
+    Math.min(10, Math.floor(Number(c.req.query("page"))) || 1),
+  );
+  const timeFilter = (c.req.query("time") || "any") as TimeFilter;
+  const lang = c.req.query("lang") || "";
+  const dateFrom = c.req.query("dateFrom") || "";
+  const dateTo = c.req.query("dateTo") || "";
+  const key = cacheKey(query, engines, searchType, page, timeFilter, lang, dateFrom, dateTo);
+
+  const cached = cache.get(key);
+  if (cached) {
+    const encoder = new TextEncoder();
+    const body = new ReadableStream({
+      start(controller) {
+        for (const et of cached.engineTimings) {
+          controller.enqueue(
+            encoder.encode(`event: engine-result\ndata: ${JSON.stringify({
+              engine: et.name,
+              timing: et,
+              results: cached.results,
+              retry: false,
+              attempt: 0,
+            })}\n\n`),
+          );
+        }
+        controller.enqueue(
+          encoder.encode(`event: done\ndata: ${JSON.stringify({
+            totalTime: cached.totalTime,
+            engineTimings: cached.engineTimings,
+            relatedSearches: cached.relatedSearches,
+            knowledgePanel: cached.knowledgePanel,
+            atAGlance: cached.atAGlance,
+          })}\n\n`),
+        );
+        controller.close();
+      },
+    });
+    return new Response(body, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   }
 
-  return c.json(response);
+  const settings = await getSettings(DEGOOG_SETTINGS_ID);
+  const autoRetry = asString(settings.streamingAutoRetry) === "true";
+  const maxRetries = Math.min(5, Math.max(1, parseInt(asString(settings.streamingMaxRetries) || "2", 10)));
+
+  const rawActiveEngines =
+    searchType === "web"
+      ? await getActiveWebEngines(engines)
+      : getEnginesForType(searchType, engines).map((e) => ({
+          id: e.id,
+          instance: e.instance,
+          score: 1,
+        }));
+
+  if (rawActiveEngines.length === 0) {
+    return c.json({
+      results: [],
+      atAGlance: null,
+      query,
+      totalTime: 0,
+      type: searchType,
+      engineTimings: [],
+      relatedSearches: [],
+      knowledgePanel: null,
+    });
+  }
+
+  const start = performance.now();
+
+  const stream = new ReadableStream({
+    start(controller) {
+      const encoder = new TextEncoder();
+      const allTimings: EngineTiming[] = [];
+      const allRawResults: { results: import("../types").SearchResult[]; multiplier: number }[] = [];
+
+      function _send(event: string, data: unknown) {
+        controller.enqueue(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+        );
+      }
+
+      const enginePromises = rawActiveEngines.map(async ({ instance, score, id }) => {
+        const engineName = instance.name;
+        let attempt = 0;
+        let lastTiming: EngineTiming = { name: engineName, time: 0, resultCount: 0 };
+
+        while (attempt <= (autoRetry ? maxRetries : 0)) {
+          const isRetry = attempt > 0;
+          const { results, timing } = await searchSingleEngine(
+            id,
+            query,
+            page,
+            timeFilter,
+            lang,
+            dateFrom,
+            dateTo,
+          );
+          lastTiming = timing;
+
+          if (timing.resultCount > 0) {
+            allRawResults.push({ results, multiplier: score });
+            allTimings.push(timing);
+            _send("engine-result", {
+              engine: engineName,
+              timing,
+              results: scoreResults(allRawResults),
+              retry: isRetry,
+              attempt,
+            });
+            return;
+          }
+
+          attempt++;
+          if (attempt <= (autoRetry ? maxRetries : 0)) {
+            _send("engine-retry", {
+              engine: engineName,
+              attempt,
+              maxRetries,
+              timing,
+            });
+          }
+        }
+
+        allTimings.push(lastTiming);
+        _send("engine-result", {
+          engine: engineName,
+          timing: lastTiming,
+          results: scoreResults(allRawResults),
+          retry: false,
+          attempt: 0,
+        });
+      });
+
+      void Promise.all(enginePromises).then(async () => {
+        const totalTime = Math.round(performance.now() - start);
+        const finalResults = scoreResults(allRawResults);
+        const atAGlance =
+          searchType === "web" && finalResults.length > 0 && finalResults[0].snippet
+            ? finalResults[0]
+            : null;
+
+        let relatedSearches: string[] = [];
+        let knowledgePanel: import("../types").KnowledgePanel | null = null;
+        if (searchType === "web" && page === 1) {
+          [relatedSearches, knowledgePanel] = await Promise.all([
+            fetchRelatedSearches(query).catch(() => [] as string[]),
+            fetchKnowledgePanel(query).catch(() => null),
+          ]);
+        }
+
+        const response: SearchResponse = {
+          results: finalResults,
+          atAGlance,
+          query,
+          totalTime,
+          type: searchType,
+          engineTimings: allTimings,
+          relatedSearches,
+          knowledgePanel,
+        };
+
+        const ttl = cache.hasFailedEngines(response)
+          ? cache.SHORT_TTL_MS
+          : searchType === "news"
+            ? cache.NEWS_TTL_MS
+            : undefined;
+        cache.set(key, response, ttl);
+
+        _send("done", {
+          totalTime,
+          engineTimings: allTimings,
+          relatedSearches,
+          knowledgePanel,
+          atAGlance,
+        });
+        controller.close();
+      });
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 });
 
 router.get("/api/slots", async (c) => {
@@ -213,7 +420,9 @@ router.post("/api/slots/glance", async (c) => {
         results: body.results,
         fetch: outgoingFetch as SlotPluginContext["fetch"],
       };
+      const t0 = performance.now();
       const out = await plugin.execute(body.query!.trim(), context);
+      debug("plugin", `${plugin.id} executed in ${Math.round(performance.now() - t0)}ms`);
       if (!out.html || !out.html.trim()) continue;
       panels.push({
         id: plugin.id,
@@ -235,7 +444,7 @@ router.get("/api/search/retry", async (c) => {
     return c.json({ error: "Missing 'q' or 'engine' parameter" }, 400);
 
   const engines = parseEngineConfig(new URL(c.req.url).searchParams);
-  const searchType = (c.req.query("type") || "all") as SearchType;
+  const searchType = (c.req.query("type") || "web") as SearchType;
   const page = Math.max(
     1,
     Math.min(10, Math.floor(Number(c.req.query("page"))) || 1),
@@ -320,10 +529,10 @@ router.get("/api/lucky", async (c) => {
   if (!query) return c.json({ error: "Missing query parameter 'q'" }, 400);
 
   const engines = parseEngineConfig(new URL(c.req.url).searchParams);
-  const key = cacheKey(query, engines, "all", 1);
+  const key = cacheKey(query, engines, "web", 1);
   let response = cache.get(key);
   if (!response) {
-    response = await search(query, engines, "all", 1);
+    response = await search(query, engines, "web", 1);
     cache.set(key, response);
   }
   if (response.results.length > 0) return c.redirect(response.results[0].url);
@@ -395,10 +604,10 @@ router.get("/api/tab-search", async (c) => {
 
     if (engineType) {
       const engines = getEnginesForCustomType(engineType);
-      const engineContext = { fetch: outgoingFetch };
       const outcomes = await Promise.all(
-        engines.map(async (e) => {
+        engines.map(async ({ id, instance: e }) => {
           const start = performance.now();
+          const engineContext = createSearchEngineContext(id);
           try {
             const value = await e.executeSearch(
               query.trim(),
@@ -446,9 +655,11 @@ router.get("/api/tab-search", async (c) => {
       const result = await tab.executeSearch(query.trim(), page, {
         clientIp: clientIp ?? undefined,
       });
+      const tabElapsed = Math.round(performance.now() - tabStart);
+      debug("plugin", `${tab.id} executed in ${tabElapsed}ms`);
       engineTimings.push({
         name: tab.name,
-        time: Math.round(performance.now() - tabStart),
+        time: tabElapsed,
         resultCount: result.results.length,
       });
       const offset = allResults.length;
@@ -491,6 +702,15 @@ router.get("/api/settings/languages", async (c) => {
     .map((s) => s.trim().toLowerCase())
     .filter((s) => /^[a-z]{2,3}$/.test(s));
   return c.json({ languages: codes.length > 0 ? codes : DEFAULT_LANGUAGES });
+});
+
+router.get("/api/settings/streaming", async (c) => {
+  const settings = await getSettings(DEGOOG_SETTINGS_ID);
+  return c.json({
+    enabled: asString(settings.streamingEnabled) === "true",
+    autoRetry: asString(settings.streamingAutoRetry) === "true",
+    maxRetries: parseInt(asString(settings.streamingMaxRetries) || "2", 10),
+  });
 });
 
 export default router;

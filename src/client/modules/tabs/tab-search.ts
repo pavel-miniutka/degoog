@@ -1,16 +1,16 @@
 import { state } from "../../state";
-import { showResults, setActiveTab } from "../../utils/navigation";
+import { setActiveTab } from "../../utils/navigation";
 import { fetchSlotPanels } from "../../utils/search-utils";
 import {
   clearSlotPanels,
   renderSidebar,
+  buildResultContext,
 } from "../renderer/render";
 import { closeMediaPreview, destroyMediaObserver } from "../media/media";
 import { hideAcDropdown } from "../../utils/autocomplete";
 import { skeletonResults } from "../../animations/skeleton";
-import { escapeHtml, cleanUrl } from "../../utils/dom";
-import { faviconUrl, proxyImageUrl } from "../../utils/url";
 import { buildPaginationHtml } from "../../utils/pagination";
+import { renderTemplate } from "../../utils/template";
 import { SlotPanelPosition, type ScoredResult, type SearchResponse } from "../../types";
 
 export async function performTabSearch(
@@ -25,7 +25,6 @@ export async function performTabSearch(
   state.currentPage = page;
   destroyMediaObserver();
 
-  showResults();
   setActiveTab(`tab:${tabId}`);
   closeMediaPreview();
   hideAcDropdown(document.getElementById("ac-dropdown-home"));
@@ -48,7 +47,7 @@ export async function performTabSearch(
   clearSlotPanels();
   document.title = `${query} - degoog`;
 
-  const layout = document.querySelector<HTMLElement>(".results-layout");
+  const layout = document.getElementById("results-layout");
   if (layout) layout.classList.remove("media-mode");
 
   const urlParams = new URLSearchParams({ q: query, type: `tab:${tabId}` });
@@ -121,21 +120,9 @@ function _renderTabResults(
 
   container.innerHTML = results
     .map((r) => {
-      const thumbBlock =
-        r.thumbnail &&
-        `<div class="result-thumbnail-wrap"><img class="result-thumbnail-img" src="${escapeHtml(proxyImageUrl(r.thumbnail))}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`;
-      const body = `
-      <div class="result-url-row">
-        <img class="result-favicon" src="${faviconUrl(r.url)}" alt="" width="26" height="26" onerror="this.style.display='none'">
-        <cite class="result-cite">${escapeHtml(cleanUrl(r.url))}</cite>
-      </div>
-      <a class="result-title" href="${escapeHtml(r.url)}" target="_blank">${escapeHtml(r.title)}</a>
-      <p class="result-snippet">${escapeHtml(r.snippet)}</p>
-      <div class="result-engines">${(r.sources || []).map((s) => `<span class="result-engine-tag">${escapeHtml(s)}</span>`).join("")}</div>`;
-      if (thumbBlock) {
-        return `<div class="result-item"><div class="result-item-inner">${thumbBlock}<div class="result-body">${body}</div></div></div>`;
-      }
-      return `<div class="result-item">${body}</div>`;
+      const ctx = buildResultContext(r);
+      ctx.link_target = "_blank";
+      return renderTemplate("degoog-result", ctx) ?? "";
     })
     .join("");
 }

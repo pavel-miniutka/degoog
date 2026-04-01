@@ -27,7 +27,7 @@ Search aggregator that queries multiple engines and shows results in one place. 
 
 ## Run
 
-By default the app will run on port `4444`, please check the [documentation](https://fccview.github.io/degoog/env.html) for a comprehensive list of env variables and various nuances.
+By default the app will run on port `4444` with user `1000:1000`, please check the [documentation](https://fccview.github.io/degoog/env.html) for a comprehensive list of env variables and various nuances.
 
 ```bash
 mkdir -p ./data
@@ -54,7 +54,7 @@ services:
 <summary>Inline podman</summary>
 
 ```bash
-podman run -d --name degoog -p 4444:4444 -v ./data:/app/data --user 1000:1000 --security-opt label=disable --restart unless-stopped ghcr.io/fccview/degoog:latest
+podman run -d --name degoog -p 4444:4444 -v ./data:/app/data --security-opt label=disable --restart unless-stopped ghcr.io/fccview/degoog:latest
 ```
 
 </details>
@@ -97,7 +97,7 @@ WantedBy=default.target
 <summary>Inline docker</summary>
 
 ```bash
-docker run -d --name degoog -p 4444:4444 -v ./data:/app/data --user "1000:1000" --restart unless-stopped ghcr.io/fccview/degoog:latest
+docker run -d --name degoog -p 4444:4444 -v ./data:/app/data --restart unless-stopped ghcr.io/fccview/degoog:latest
 ```
 
 </details>
@@ -109,6 +109,7 @@ You'll need a `.env` file for your env variables and the following required depe
 
 - [bun](https://bun.sh)
 - [git](https://git-scm.com)
+- [curl](https://curl.se)
 
 ```bash
 git clone https://github.com/fccview/degoog.git
@@ -146,13 +147,17 @@ Some amazing people around the web decided to make their degoog instances availa
 
 Aside from the official store these are third party repositories, they have been vetted once before adding them to the readme but I will not personally keep an eye on all of them, it's your responsibility to make sure what you install on your instance. I love open source and I'll obviously try to add these for as long as it's manageable to do so, eventually I may need a system for it, but for now they're comfy in the readme.
 
-| name                 | url                                                     |
-| :------------------- | :------------------------------------------------------ |
-| official store       | `https://github.com/fccview/fccview-degoog-extensions`  |
-| Subatomic1618 addons | `https://codeberg.org/Subatomic1618/degoog-addons.git`  |
-| Weeb Paradise        | `https://codeberg.org/fccview/degoog-weeb-paradise.git` |
-| Georgvwt stuff       | `https://github.com/Georgvwt/georgvwt-degoog-stuff.git` |
-| Lazerleif Maps       | `https://github.com/lazerleif/degoog-maps.git`          |
+| name                     | url                                                                |
+| :----------------------- | :----------------------------------------------------------------- |
+| official store           | `https://github.com/fccview/fccview-degoog-extensions`             |
+| Subatomic1618 addons     | `https://codeberg.org/Subatomic1618/degoog-addons.git`             |
+| Weeb Paradise            | `https://codeberg.org/fccview/degoog-weeb-paradise.git`            |
+| Georgvwt stuff           | `https://github.com/Georgvwt/georgvwt-degoog-stuff.git`            |
+| Lazerleif Maps           | `https://github.com/lazerleif/degoog-maps.git`                     |
+| trankil                  | `https://github.com/Arkmind/trankil.git`                           |
+| TheAnnoying's Extensions | `https://github.com/TheAnnoying/theannoying-degoog-extensions.git` |
+| SiaoZeng SearXNG         | `https://github.com/SiaoZeng/degoog-searxng-extensions.git`        |
+| Litruv Extensions        | `https://github.com/litruv/litruv-degoog-extensions.git`           |
 
 ## Documentation
 
