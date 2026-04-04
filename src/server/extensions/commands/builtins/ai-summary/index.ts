@@ -53,7 +53,6 @@ export const aiSummarySettingsSchema: SettingField[] = [
 ];
 
 export interface AISummarySettings {
-  enabled: boolean;
   baseUrl: string;
   model: string;
   apiKey: string;
@@ -66,7 +65,6 @@ export async function getAISummarySettings(): Promise<AISummarySettings> {
   const timeoutSeconds =
     parseFloat(asString(stored["timeoutSeconds"]) || "") || 30;
   return {
-    enabled: asString(stored["enabled"]) === "true",
     baseUrl: asString(stored["baseUrl"]),
     model: asString(stored["model"]),
     apiKey: asString(stored["apiKey"]),
@@ -129,7 +127,7 @@ export async function generateAISummary(
   results: { title: string; url: string; snippet: string }[],
 ): Promise<string | null> {
   const settings = await getAISummarySettings();
-  if (!settings.enabled || !settings.baseUrl || !settings.model) return null;
+  if (!settings.baseUrl || !settings.model) return null;
 
   const context = results
     .slice(0, 6)
@@ -154,7 +152,7 @@ export async function chatFollowUp(
   history: OpenAIMessage[],
 ): Promise<string | null> {
   const settings = await getAISummarySettings();
-  if (!settings.enabled || !settings.baseUrl || !settings.model) return null;
+  if (!settings.baseUrl || !settings.model) return null;
   return chatComplete(settings, history, 512);
 }
 
@@ -162,12 +160,13 @@ const aiSummarySlot: SlotPlugin = {
   id: AI_SUMMARY_ID,
   settingsId: AI_SUMMARY_ID,
   name: "AI Summary",
+  waitForResults: true,
   description:
     "Replaces At a Glance with a brief AI-generated summary using any OpenAI-compatible provider",
   position: SlotPanelPosition.AtAGlance,
   async trigger(): Promise<boolean> {
     const settings = await getAISummarySettings();
-    return settings.enabled && !!settings.baseUrl && !!settings.model;
+    return !!settings.baseUrl && !!settings.model;
   },
   async execute(query, context): Promise<{ title?: string; html: string }> {
     const results = context?.results ?? [];
