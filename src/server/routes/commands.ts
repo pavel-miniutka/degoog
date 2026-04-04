@@ -86,7 +86,9 @@ router.get("/api/command", async (c) => {
     trigger: match.command.trigger,
     title: result.title,
     html: injectScope(
-      match.command.t ? translateHTML(result.html, match.command.t) : result.html,
+      match.command.t
+        ? translateHTML(result.html, match.command.t)
+        : result.html,
       `commands/${match.commandId}`,
     ),
     action: result.action,
