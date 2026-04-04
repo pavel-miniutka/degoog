@@ -1,5 +1,6 @@
 import type { RequestMiddleware } from "../../types";
 import { debug } from "../../utils/logger";
+import { createTranslatorFromPath } from "../../utils/translation";
 
 const middlewares = new Map<string, RequestMiddleware>();
 
@@ -43,7 +44,11 @@ export async function initMiddlewareRegistry(): Promise<void> {
         const url = pathToFileURL(fullPath).href;
         const mod = await import(url);
         const m = mod.middleware ?? mod.default?.middleware;
+
         if (!m || !isRequestMiddleware(m)) continue;
+
+        m.t = await createTranslatorFromPath(entryPath);
+
         middlewares.set(m.id, m);
       } catch (err) {
         debug(

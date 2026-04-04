@@ -1,15 +1,19 @@
-import { readdir, readFile, mkdir } from "fs/promises";
+import { mkdir, readdir, readFile } from "fs/promises";
 import { join } from "path";
 import * as sass from "sass";
 import {
-  getSettings,
-  setSettings,
-  maskSecrets,
-  asString,
-} from "../../utils/plugin-settings";
+  type ExtensionMeta,
+  ExtensionStoreType,
+  type SettingField,
+  Translate,
+} from "../../types";
 import { debug } from "../../utils/logger";
-import { type SettingField, type ExtensionMeta, ExtensionStoreType } from "../../types";
-
+import {
+  asString,
+  getSettings,
+  maskSecrets,
+  setSettings,
+} from "../../utils/plugin-settings";
 
 const THEME_SETTINGS_ID = "theme";
 
@@ -36,9 +40,11 @@ export interface LoadedTheme {
   manifest: ThemeManifest;
   dir: string;
   compiledCss?: string;
+  t?: Translate;
 }
 
 import { themesDir } from "../../utils/paths";
+import { createTranslatorFromPath } from "../../utils/translation";
 
 const THEMES_DIR = themesDir();
 
@@ -85,6 +91,11 @@ export async function initThemes(): Promise<void> {
     await mkdir(THEMES_DIR, { recursive: true });
     const entries = await readdir(THEMES_DIR, { withFileTypes: true });
 
+    console.log(
+      "Found theme entries:",
+      entries.map((e) => e.name),
+    );
+
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       const themeDir = join(THEMES_DIR, entry.name);
@@ -106,6 +117,16 @@ export async function initThemes(): Promise<void> {
         };
 
         theme.compiledCss = await compileThemeCss(theme);
+
+        console.log(
+          "creating translator for theme",
+          theme.id,
+          "with dir",
+          themeDir,
+          theme.dir,
+        );
+
+        theme.t = await createTranslatorFromPath(themeDir);
 
         if (manifest.settingsSchema?.length) {
           const stored = await getSettings(settingsId(entry.name));
@@ -232,7 +253,10 @@ export async function getThemeTemplatesHtml(): Promise<string> {
       const content = await readFile(join(theme.dir, filePath), "utf-8");
       parts.push(`<template id="degoog-${id}">${content}</template>`);
     } catch {
-      debug("themes", `Failed to read template file: ${filePath} for theme ${theme.id}`);
+      debug(
+        "themes",
+        `Failed to read template file: ${filePath} for theme ${theme.id}`,
+      );
     }
   }
   return parts.join("\n");

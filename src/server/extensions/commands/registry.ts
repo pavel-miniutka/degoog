@@ -1,14 +1,15 @@
 import { join } from "path";
 import type { BangCommand, ExtensionMeta, SettingField } from "../../types";
-import { getEngineMap as getSearchEngineMap } from "../engines/registry";
+import { debug } from "../../utils/logger";
+import { initPlugin, loadPluginAssets } from "../../utils/plugin-assets";
 import {
+  asString,
   getSettings,
   isDisabled,
   maskSecrets,
-  asString,
 } from "../../utils/plugin-settings";
-import { loadPluginAssets, initPlugin } from "../../utils/plugin-assets";
-import { debug } from "../../utils/logger";
+import { createTranslatorFromPath } from "../../utils/translation";
+import { getEngineMap as getSearchEngineMap } from "../engines/registry";
 
 interface CommandEntry {
   id: string;
@@ -47,7 +48,8 @@ function isBangCommand(val: unknown): val is BangCommand {
     "trigger" in val &&
     typeof (val as BangCommand).trigger === "string" &&
     "execute" in val &&
-    typeof (val as BangCommand).execute === "function"
+    typeof (val as BangCommand).execute === "function" &&
+    "t" in val
   );
 }
 
@@ -85,16 +87,22 @@ async function loadCommandsFromRoot(
       const fullPath = join(entryPath, indexFile);
       const url = pathToFileURL(fullPath).href;
       const mod = await import(url);
+
       const Export = mod.default ?? mod.command ?? mod.Command;
+
       const instance: BangCommand =
         typeof Export === "function" ? new Export() : Export;
+
       if (!isBangCommand(instance)) continue;
       if (allCommands.some((c) => c.trigger === instance.trigger)) continue;
+
+      instance.t = await createTranslatorFromPath(entryPath);
 
       if (!(await isDisabled(id))) {
         const template = await loadPluginAssets(entryPath, entry, id, source);
         await initPlugin(instance, entryPath, id, template);
       }
+
       allCommands.push({
         id,
         trigger: instance.trigger,
@@ -102,6 +110,7 @@ async function loadCommandsFromRoot(
         instance,
       });
     } catch (err) {
+      console.error(`Failed to load command: ${entry}`, err);
       debug("commands", `Failed to load command: ${entry}`, err);
     }
   }

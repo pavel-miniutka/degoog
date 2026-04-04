@@ -1,30 +1,31 @@
 import {
-  type SearchEngine,
-  type SearchType,
   type EngineConfig,
   type ExtensionMeta,
+  type SearchEngine,
+  type SearchType,
   type SettingField,
   ExtensionStoreType,
 } from "../../types";
+import { debug } from "../../utils/logger";
 import {
+  asString,
   getSettings,
   maskSecrets,
   mergeDefaults,
-  asString,
 } from "../../utils/plugin-settings";
-import { debug } from "../../utils/logger";
-import { GoogleEngine } from "./google";
-import { DuckDuckGoEngine } from "./duckduckgo";
+import { createTranslatorFromPath } from "../../utils/translation";
 import { BingEngine } from "./bing";
-import { BraveEngine } from "./brave";
-import { WikipediaEngine } from "./wikipedia";
-import { RedditEngine } from "./reddit";
-import { GoogleImagesEngine } from "./google-images";
 import { BingImagesEngine } from "./bing-images";
-import { GoogleVideosEngine } from "./google-videos";
-import { BingVideosEngine } from "./bing-videos";
-import { BraveNewsEngine } from "./brave-news";
 import { BingNewsEngine } from "./bing-news";
+import { BingVideosEngine } from "./bing-videos";
+import { BraveEngine } from "./brave";
+import { BraveNewsEngine } from "./brave-news";
+import { DuckDuckGoEngine } from "./duckduckgo";
+import { GoogleEngine } from "./google";
+import { GoogleImagesEngine } from "./google-images";
+import { GoogleVideosEngine } from "./google-videos";
+import { RedditEngine } from "./reddit";
+import { WikipediaEngine } from "./wikipedia";
 export type EngineSearchType =
   | "web"
   | "images"
@@ -438,10 +439,15 @@ export async function initEngines(): Promise<void> {
       try {
         const url = pathToFileURL(fullPath).href;
         const mod = await import(url);
+
         const Export = mod.default ?? mod.engine ?? mod.Engine;
         const instance: SearchEngine =
           typeof Export === "function" ? new Export() : Export;
+
         if (!isSearchEngine(instance)) continue;
+
+        instance.t = await createTranslatorFromPath(join(pluginDir));
+
         const searchType =
           typeof mod.type === "string" && mod.type.trim() ? mod.type : "web";
         const pluginHosts =

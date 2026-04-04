@@ -1,14 +1,13 @@
 import { join } from "path";
 import type { SearchResultTab } from "../../types";
+import { debug } from "../../utils/logger";
 import {
-  isDisabled,
-} from "../../utils/plugin-settings";
-import {
-  loadPluginAssets,
   initPlugin,
+  loadPluginAssets,
   registerPluginSettingsId,
 } from "../../utils/plugin-assets";
-import { debug } from "../../utils/logger";
+import { isDisabled } from "../../utils/plugin-settings";
+import { createTranslatorFromPath } from "../../utils/translation";
 
 let tabPlugins: SearchResultTab[] = [];
 
@@ -56,11 +55,18 @@ async function loadTabsFromRoot(
       const tab = mod.tab ?? mod.searchResultTab ?? mod.default?.tab;
       if (!tab || !isSearchResultTab(tab)) continue;
 
+      tab.t = await createTranslatorFromPath(entryPath);
+
       const tabSettingsId = tab.settingsId ?? `tab-${tab.id}`;
       registerPluginSettingsId(entry, tabSettingsId);
 
       if (!(await isDisabled(tabSettingsId))) {
-        const template = await loadPluginAssets(entryPath, entry, tabSettingsId, source);
+        const template = await loadPluginAssets(
+          entryPath,
+          entry,
+          tabSettingsId,
+          source,
+        );
         await initPlugin(tab, entryPath, tabSettingsId, template);
       }
       tabPlugins.push(tab);

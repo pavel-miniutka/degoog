@@ -1,14 +1,13 @@
 import { join } from "path";
 import { SlotPanelPosition, type SlotPlugin } from "../../types";
+import { debug } from "../../utils/logger";
 import {
-  isDisabled,
-} from "../../utils/plugin-settings";
-import {
-  loadPluginAssets,
   initPlugin,
+  loadPluginAssets,
   registerPluginSettingsId,
 } from "../../utils/plugin-assets";
-import { debug } from "../../utils/logger";
+import { isDisabled } from "../../utils/plugin-settings";
+import { createTranslatorFromPath } from "../../utils/translation";
 
 let slotPlugins: SlotPlugin[] = [];
 const builtinsDir = join(
@@ -25,7 +24,8 @@ function isSlotPlugin(val: unknown): val is SlotPlugin {
   const slot = val as SlotPlugin;
   const validPositions = new Set(Object.values(SlotPanelPosition));
   const positionOk =
-    "position" in slot && validPositions.has(slot.position as SlotPanelPosition);
+    "position" in slot &&
+    validPositions.has(slot.position as SlotPanelPosition);
   const slotPositionsOk =
     !("slotPositions" in slot) ||
     (Array.isArray(slot.slotPositions) &&
@@ -76,14 +76,23 @@ async function loadSlotsFromRoot(
       const fullPath = join(entryPath, indexFile);
       const url = pathToFileURL(fullPath).href;
       const mod = await import(url);
+
       const slot = mod.slot ?? mod.slotPlugin ?? mod.default?.slot;
+
       if (!slot || !isSlotPlugin(slot)) continue;
+
+      slot.t = await createTranslatorFromPath(entryPath);
 
       const slotSettingsId = slot.settingsId ?? `slot-${slot.id}`;
       registerPluginSettingsId(entry, slotSettingsId);
 
       if (!(await isDisabled(slotSettingsId))) {
-        const template = await loadPluginAssets(entryPath, entry, slotSettingsId, source);
+        const template = await loadPluginAssets(
+          entryPath,
+          entry,
+          slotSettingsId,
+          source,
+        );
         await initPlugin(slot, entryPath, slotSettingsId, template);
       }
       slotPlugins.push(slot);
