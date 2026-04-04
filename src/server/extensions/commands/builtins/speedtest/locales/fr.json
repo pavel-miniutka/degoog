@@ -5,6 +5,11 @@
     "download": "Téléchargement (Mbps)",
     "upload": "Envoi (Mbps)",
     "latency": "Latence (ms)",
-    "starting": "Démarrage..."
+    "starting": "Démarrage...",
+    "testing-latency": "Test de latence...",
+    "testing-download": "Test de débit descendant...",
+    "testing-upload": "Test de débit montant...",
+    "complete": "Terminé",
+    "error": "Erreur"
   }
 }

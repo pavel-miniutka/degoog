@@ -32,7 +32,7 @@
     var maxSpeed = 500;
     if (!status || !dlEl) return;
     async function run() {
-      status.textContent = "Testing latency...";
+      status.textContent = t("speedtest.testing-latency");
       var pings = [];
       for (var i = 0; i < 5; i++) {
         var t0 = performance.now();
@@ -46,7 +46,7 @@
       });
       var latency = Math.round(pings[Math.floor(pings.length / 2)]);
       latEl.textContent = latency;
-      status.textContent = "Testing download speed...";
+      status.textContent = t("speedtest.testing-download");
       var dlUrl = "https://speed.cloudflare.com/__down?bytes=25000000";
       var dlStart = performance.now();
       try {
@@ -58,9 +58,9 @@
         if (dlBar)
           dlBar.style.width = Math.min((dlMbps / maxSpeed) * 100, 100) + "%";
       } catch (e) {
-        dlEl.textContent = "Error";
+        dlEl.textContent = t("speedtest.error");
       }
-      status.textContent = "Testing upload speed...";
+      status.textContent = t("speedtest.testing-upload");
       var ulData = new Uint8Array(5000000);
       var ulStart = performance.now();
       try {
@@ -75,9 +75,9 @@
         if (ulBar)
           ulBar.style.width = Math.min((ulMbps / maxSpeed) * 100, 100) + "%";
       } catch (e) {
-        ulEl.textContent = "Error";
+        ulEl.textContent = t("speedtest.error");
       }
-      status.textContent = "Complete";
+      status.textContent = t("speedtest.complete");
     }
     run();
   })();

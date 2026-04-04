@@ -5,6 +5,11 @@
     "download": "Download (Mbps)",
     "upload": "Upload (Mbps)",
     "latency": "Latency (ms)",
-    "starting": "Starting..."
+    "starting": "Starting...",
+    "testing-latency": "Testing latency...",
+    "testing-download": "Testing download speed...",
+    "testing-upload": "Testing upload speed...",
+    "complete": "Complete",
+    "error": "Error"
   }
 }
