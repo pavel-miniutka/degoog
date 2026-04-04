@@ -91,13 +91,9 @@ export async function initThemes(): Promise<void> {
     await mkdir(THEMES_DIR, { recursive: true });
     const entries = await readdir(THEMES_DIR, { withFileTypes: true });
 
-    console.log(
-      "Found theme entries:",
-      entries.map((e) => e.name),
-    );
-
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
+
       const themeDir = join(THEMES_DIR, entry.name);
       const manifestPath = join(themeDir, "theme.json");
 
@@ -117,14 +113,6 @@ export async function initThemes(): Promise<void> {
         };
 
         theme.compiledCss = await compileThemeCss(theme);
-
-        console.log(
-          "creating translator for theme",
-          theme.id,
-          "with dir",
-          themeDir,
-          theme.dir,
-        );
 
         theme.t = await createTranslatorFromPath(themeDir);
 

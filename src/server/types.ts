@@ -276,4 +276,5 @@ export interface PluginRoute {
   method: PluginRouteMethod;
   path: string;
   handler: (req: Request) => Response | Promise<Response>;
+  t?: Translate;
 }
