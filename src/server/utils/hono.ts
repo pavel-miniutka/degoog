@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { BlankEnv, BlankInput } from "hono/types";
-import { debug } from "./logger";
+import { logger } from "./logger";
 
 /**
  * Checks if a DEGOOG_I18N environment variable exists, if not uses
@@ -15,7 +15,7 @@ export function getLocale(
   const override = process.env.DEGOOG_I18N?.trim();
 
   if (override) {
-    debug(
+    logger.debug(
       "translation",
       `Locale forced by DEGOOG_I18N: "${override}"`,
       undefined,

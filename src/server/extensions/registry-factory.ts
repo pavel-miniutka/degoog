@@ -4,10 +4,10 @@
  * If developers decide to create new registries and make pull requests I'd rather them know exactly how to semantically do it.
  */
 
-import { join } from "path";
 import { readdir, stat } from "fs/promises";
+import { join } from "path";
 import { pathToFileURL } from "url";
-import { debug } from "../utils/logger";
+import { logger } from "../utils/logger";
 
 /**
  * A directory to scan for extensions, along with its source label.
@@ -197,7 +197,7 @@ export function createRegistry<T>(opts: RegistryOptions<T>): {
         }
         _items.push(extracted);
       } catch (err) {
-        debug(opts.debugTag, `Failed to load: ${resolved.base}`, err);
+        logger.debug(opts.debugTag, `Failed to load: ${resolved.base}`, err);
       }
     }
   }

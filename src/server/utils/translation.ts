@@ -2,7 +2,7 @@ import { pathToFileURL } from "bun";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { Translate, TranslationRecord, TranslationVars } from "../types";
-import { debug } from "./logger";
+import { logger } from "./logger";
 
 /**
  * Returns the closest available language based on the provided language and available languages.
@@ -23,7 +23,7 @@ export const getClosestLanguage = (
   const baseMatch = availableLangs.find((l) => l.split("-")[0] === baseLang);
   if (baseMatch) return baseMatch;
 
-  debug(
+  logger.debug(
     "translation",
     `No exact match for language "${lang}" or its base language "${baseLang}".`,
   );
@@ -41,7 +41,7 @@ export const dynamicImportTranslationFiles = async (
   path: string,
 ): Promise<TranslationRecord> => {
   const files = await readdir(join(path, "locales")).catch((e) => {
-    debug(
+    logger.debug(
       "translation",
       `Error reading translation directory at path "${path}":`,
       e,
@@ -64,13 +64,13 @@ export const dynamicImportTranslationFiles = async (
       if (typeof translation === "object" && translation !== null) {
         translations[lang] = translation;
       } else {
-        debug(
+        logger.debug(
           "translation",
           `Translation file for language "${lang}" at path "${path}" does not export an object.`,
         );
       }
     } catch (e) {
-      debug(
+      logger.debug(
         "translation",
         `Error loading translation file for language "${lang}" at path "${path}":`,
         e,
@@ -98,7 +98,7 @@ export const createTranslator = (translations: TranslationRecord) => {
       const closestLang = getClosestLanguage(locale, localeList);
 
       if (!closestLang) {
-        debug(
+        logger.debug(
           "translation",
           `No available translations for locale "${locale}". Available languages: ${localeList.join(
             ", ",
@@ -118,7 +118,7 @@ export const createTranslator = (translations: TranslationRecord) => {
       }, translations[closestLang]);
 
       if (typeof value === "object" || typeof value === "undefined") {
-        debug(
+        logger.debug(
           "translation",
           `Translation for key "${key}" in language "${locale}" is missing.`,
         );

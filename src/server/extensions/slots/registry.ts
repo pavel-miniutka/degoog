@@ -4,7 +4,7 @@ import {
   type SlotPlugin,
   type Translate,
 } from "../../types";
-import { debug } from "../../utils/logger";
+import { pluginsDir } from "../../utils/paths";
 import {
   initPlugin,
   loadPluginAssets,
@@ -13,7 +13,6 @@ import {
 } from "../../utils/plugin-assets";
 import { isDisabled } from "../../utils/plugin-settings";
 import { createTranslatorFromPath } from "../../utils/translation";
-import { pluginsDir } from "../../utils/paths";
 import { createRegistry } from "../registry-factory";
 
 const builtinsDir = join(
@@ -57,7 +56,10 @@ const registry = createRegistry<SlotPlugin>({
     { dir: pluginsDir(), source: "plugin" },
   ],
   match: (mod) => {
-    const s = mod.slot ?? mod.slotPlugin ?? (mod.default as Record<string, unknown>)?.slot;
+    const s =
+      mod.slot ??
+      mod.slotPlugin ??
+      (mod.default as Record<string, unknown>)?.slot;
     return isSlotPlugin(s) ? s : null;
   },
   onLoad: async (slot, { entryPath, folderName, source }) => {
@@ -66,7 +68,12 @@ const registry = createRegistry<SlotPlugin>({
     registerPluginNamespace(folderName, `slots/${slot.id}`);
     registerPluginSettingsId(folderName, settingsId);
     if (!(await isDisabled(settingsId))) {
-      const template = await loadPluginAssets(entryPath, folderName, settingsId, source);
+      const template = await loadPluginAssets(
+        entryPath,
+        folderName,
+        settingsId,
+        source,
+      );
       await initPlugin(slot, entryPath, settingsId, template);
     }
   },
@@ -89,7 +96,8 @@ export function getAllSlotTranslators(): {
   namespace: string;
   translator: Translate;
 }[] {
-  return registry.items()
+  return registry
+    .items()
     .filter((s) => !!s.t)
     .map((s) => ({ namespace: `slots/${s.id}`, translator: s.t! }));
 }

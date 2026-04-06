@@ -7,7 +7,7 @@ import {
   type SettingField,
   Translate,
 } from "../../types";
-import { debug } from "../../utils/logger";
+import { logger } from "../../utils/logger";
 import {
   asString,
   getSettings,
@@ -69,7 +69,7 @@ async function compileThemeCss(
     }
     return await readFile(fullPath, "utf-8");
   } catch (err) {
-    debug("themes", `Failed to compile CSS for theme ${theme.id}`, err);
+    logger.debug("themes", `Failed to compile CSS for theme ${theme.id}`, err);
     return undefined;
   }
 }
@@ -102,7 +102,10 @@ export async function initThemes(): Promise<void> {
         const manifest: ThemeManifest = JSON.parse(raw);
 
         if (!manifest.name) {
-          debug("themes", `Theme ${entry.name} missing name in theme.json`);
+          logger.debug(
+            "themes",
+            `Theme ${entry.name} missing name in theme.json`,
+          );
           continue;
         }
 
@@ -124,11 +127,11 @@ export async function initThemes(): Promise<void> {
 
         themes.push(theme);
       } catch (err) {
-        debug("themes", `Failed to load theme: ${entry.name}`, err);
+        logger.debug("themes", `Failed to load theme: ${entry.name}`, err);
       }
     }
   } catch (err) {
-    debug("themes", "Failed to read themes directory", err);
+    logger.debug("themes", "Failed to read themes directory", err);
   }
 
   activeThemeId = await loadActiveThemeId();
@@ -241,7 +244,7 @@ export async function getThemeTemplatesHtml(): Promise<string> {
       const content = await readFile(join(theme.dir, filePath), "utf-8");
       parts.push(`<template id="degoog-${id}">${content}</template>`);
     } catch {
-      debug(
+      logger.debug(
         "themes",
         `Failed to read template file: ${filePath} for theme ${theme.id}`,
       );

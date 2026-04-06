@@ -6,8 +6,8 @@ import {
 } from "../extensions/commands/registry";
 import { searchSingleEngine } from "../search";
 import type { TimeFilter } from "../types";
-import { debug } from "../utils/logger";
 import { getLocale } from "../utils/hono";
+import { logger } from "../utils/logger";
 import { isDisabled } from "../utils/plugin-settings";
 import { getClientIp } from "../utils/request";
 import { injectScope, translateHTML } from "../utils/translation";
@@ -79,7 +79,7 @@ router.get("/api/command", async (c) => {
   if (language) match.command.t?.setLocale(language);
 
   const result = await match.command.execute(match.args, { clientIp, page });
-  debug(
+  logger.debug(
     "plugin",
     `${match.command.trigger} executed in ${Math.round(performance.now() - t0)}ms`,
   );

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { findPluginRoute } from "../extensions/plugin-routes/registry";
-import { debug } from "../utils/logger";
+import { logger } from "../utils/logger";
 import { getPluginSettingsIds } from "../utils/plugin-assets";
 import { isDisabled } from "../utils/plugin-settings";
 
@@ -27,7 +27,7 @@ router.all("/api/plugin/:pluginId/*", async (c) => {
     const t0 = performance.now();
     const res = await route.handler(c.req.raw);
 
-    debug(
+    logger.debug(
       "plugin",
       `${pluginId} ${method} ${suffix} executed in ${Math.round(performance.now() - t0)}ms`,
     );

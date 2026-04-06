@@ -33,12 +33,12 @@ import {
   type TimeFilter,
 } from "../types";
 import * as cache from "../utils/cache";
-import { debug } from "../utils/logger";
+import { getLocale } from "../utils/hono";
+import { logger } from "../utils/logger";
 import { outgoingFetch } from "../utils/outgoing";
 import { asString, getSettings, isDisabled } from "../utils/plugin-settings";
 import { checkRateLimit } from "../utils/rate-limit";
 import { getClientIp } from "../utils/request";
-import { getLocale } from "../utils/hono";
 import { injectScope, translateHTML } from "../utils/translation";
 
 const DEGOOG_SETTINGS_ID = "degoog-settings";
@@ -210,7 +210,7 @@ async function runSlotPlugins(
       };
       const t0 = performance.now();
       const out = await plugin.execute(query, context);
-      debug(
+      logger.debug(
         "plugin",
         `${plugin.id} executed in ${Math.round(performance.now() - t0)}ms`,
       );
@@ -550,10 +550,15 @@ router.post("/api/slots", async (c) => {
   }
   if (!body.query || !body.query.trim()) return c.json({ panels: [] });
   const clientIp = getClientIp(c);
-  const panels = await runSlotPlugins(body.query.trim(), clientIp, body.results, {
-    excludePosition: SlotPanelPosition.AtAGlance,
-    locale: getLocale(c),
-  });
+  const panels = await runSlotPlugins(
+    body.query.trim(),
+    clientIp,
+    body.results,
+    {
+      excludePosition: SlotPanelPosition.AtAGlance,
+      locale: getLocale(c),
+    },
+  );
   return c.json({ panels });
 });
 
@@ -589,7 +594,7 @@ router.post("/api/slots/glance", async (c) => {
       };
       const t0 = performance.now();
       const out = await plugin.execute(body.query!.trim(), context);
-      debug(
+      logger.debug(
         "plugin",
         `${plugin.id} executed in ${Math.round(performance.now() - t0)}ms`,
       );
@@ -842,7 +847,7 @@ router.get("/api/tab-search", async (c) => {
         clientIp: clientIp ?? undefined,
       });
       const tabElapsed = Math.round(performance.now() - tabStart);
-      debug("plugin", `${tab.id} executed in ${tabElapsed}ms`);
+      logger.debug("plugin", `${tab.id} executed in ${tabElapsed}ms`);
       engineTimings.push({
         name: tab.name,
         time: tabElapsed,
