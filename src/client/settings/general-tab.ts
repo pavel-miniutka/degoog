@@ -22,6 +22,19 @@ export async function initAppearanceSettings(): Promise<void> {
         localStorage.setItem(THEME_KEY, value);
       } catch {}
       applyTheme(value);
+      try {
+        const token = sessionStorage.getItem("degoog-settings-token");
+        if (token) {
+          await fetch("/api/settings/general", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-settings-token": token,
+            },
+            body: JSON.stringify({ defaultTheme: value }),
+          });
+        }
+      } catch {}
     });
   }
 

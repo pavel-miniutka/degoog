@@ -92,6 +92,9 @@ export async function initEnginesTab(
     }
     html += `</div></div>`;
   }
+  if (allowConfigure) {
+    html += `<div class="settings-page-actions"><button class="btn btn--secondary" id="save-default-engines" type="button">${t("settings-page.extensions.save-defaults")}</button></div>`;
+  }
   container.innerHTML = html;
 
   container
@@ -114,5 +117,26 @@ export async function initEnginesTab(
           if (ext) openModal(ext);
         });
       });
+
+    document.getElementById("save-default-engines")?.addEventListener("click", async () => {
+      const btn = document.getElementById("save-default-engines");
+      try {
+        const token = sessionStorage.getItem("degoog-settings-token");
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) headers["x-settings-token"] = token;
+        await fetch("/api/settings/default-engines", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(enabledMap),
+        });
+        if (btn) {
+          const prev = btn.textContent;
+          btn.textContent = t("settings-page.server.saved");
+          setTimeout(() => { btn.textContent = prev; }, 1200);
+        }
+      } catch {
+        if (btn) btn.textContent = t("settings-page.server.save-failed-network");
+      }
+    });
   }
 }

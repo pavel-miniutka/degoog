@@ -54,6 +54,13 @@ export async function initServerTab(
     "settings-streaming-max-retries",
   ) as HTMLInputElement | null;
 
+  const domainBlockEnabled = document.getElementById("settings-domain-block-enabled") as HTMLInputElement | null;
+  const domainBlockWrap = document.getElementById("settings-domain-block-wrap");
+  const domainBlockList = document.getElementById("settings-domain-block-list") as HTMLTextAreaElement | null;
+  const domainReplaceEnabled = document.getElementById("settings-domain-replace-enabled") as HTMLInputElement | null;
+  const domainReplaceWrap = document.getElementById("settings-domain-replace-wrap");
+  const domainReplaceList = document.getElementById("settings-domain-replace-list") as HTMLTextAreaElement | null;
+
   try {
     const res = await fetch("/api/settings/general", {
       headers: authHeaders(getToken),
@@ -72,6 +79,10 @@ export async function initServerTab(
         streamingEnabled?: string;
         streamingAutoRetry?: string;
         streamingMaxRetries?: string;
+        domainBlockEnabled?: string;
+        domainBlockList?: string;
+        domainReplaceEnabled?: string;
+        domainReplaceList?: string;
       };
       if (languagesEnabled && languagesWrap) {
         languagesEnabled.checked = data.languagesEnabled === "true";
@@ -115,6 +126,16 @@ export async function initServerTab(
       }
       if (streamingMaxRetries)
         streamingMaxRetries.value = data.streamingMaxRetries ?? "";
+      if (domainBlockEnabled && domainBlockWrap) {
+        domainBlockEnabled.checked = data.domainBlockEnabled === "true";
+        domainBlockWrap.style.display = domainBlockEnabled.checked ? "block" : "none";
+      }
+      if (domainBlockList) domainBlockList.value = data.domainBlockList ?? "";
+      if (domainReplaceEnabled && domainReplaceWrap) {
+        domainReplaceEnabled.checked = data.domainReplaceEnabled === "true";
+        domainReplaceWrap.style.display = domainReplaceEnabled.checked ? "block" : "none";
+      }
+      if (domainReplaceList) domainReplaceList.value = data.domainReplaceList ?? "";
     }
   } catch {}
 
@@ -148,6 +169,16 @@ export async function initServerTab(
       streamingRetryWrap.style.display = streamingAutoRetry.checked
         ? "block"
         : "none";
+    });
+  }
+  if (domainBlockEnabled && domainBlockWrap) {
+    domainBlockEnabled.addEventListener("change", () => {
+      domainBlockWrap.style.display = domainBlockEnabled.checked ? "block" : "none";
+    });
+  }
+  if (domainReplaceEnabled && domainReplaceWrap) {
+    domainReplaceEnabled.addEventListener("change", () => {
+      domainReplaceWrap.style.display = domainReplaceEnabled.checked ? "block" : "none";
     });
   }
   const _rateLimitPayload = (): Record<string, string> => {
@@ -189,6 +220,10 @@ export async function initServerTab(
             streamingEnabled: streamingEnabled?.checked ? "true" : "false",
             streamingAutoRetry: streamingAutoRetry?.checked ? "true" : "false",
             streamingMaxRetries: streamingMaxRetries?.value.trim() ?? "",
+            domainBlockEnabled: domainBlockEnabled?.checked ? "true" : "false",
+            domainBlockList: domainBlockList?.value.trim() ?? "",
+            domainReplaceEnabled: domainReplaceEnabled?.checked ? "true" : "false",
+            domainReplaceList: domainReplaceList?.value.trim() ?? "",
           }),
         });
       } catch {}
