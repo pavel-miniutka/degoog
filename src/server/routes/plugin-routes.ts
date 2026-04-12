@@ -38,7 +38,7 @@ router.all("/api/plugin/:pluginId/*", async (c) => {
       headers: res.headers,
     });
   } catch (err) {
-    console.error(`Plugin route error [${pluginId}] ${method} ${suffix}:`, err);
+    logger.error(`Plugin route error [${pluginId}] ${method} ${suffix}:`, err);
     return c.json({ error: "Plugin route failed" }, 500);
   }
 });

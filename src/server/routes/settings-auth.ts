@@ -1,11 +1,11 @@
-import { Hono, type Context } from "hono";
 import { readFile, writeFile } from "fs/promises";
-import { getSettings, setSettings, asString } from "../utils/plugin-settings";
+import { Hono, type Context } from "hono";
 import { getMiddleware } from "../extensions/middleware/registry";
-import { isPublicInstance } from "../utils/public-instance";
 import { outgoingFetch } from "../utils/outgoing";
-import { getRandomUserAgent } from "../utils/user-agents";
 import { defaultEnginesFile } from "../utils/paths";
+import { asString, getSettings, setSettings } from "../utils/plugin-settings";
+import { isPublicInstance } from "../utils/public-instance";
+import { getRandomUserAgent } from "../utils/user-agents";
 
 const DEGOOG_SETTINGS_ID = "degoog-settings";
 
@@ -200,6 +200,7 @@ router.post("/api/settings/general", async (c) => {
     "streamingEnabled",
     "streamingAutoRetry",
     "streamingMaxRetries",
+    "postMethodEnabled",
     "defaultTheme",
     "domainBlockEnabled",
     "domainBlockList",

@@ -13,20 +13,7 @@ import { initSearchResultTabs } from "./extensions/search-result-tabs/registry";
 import { initSlotPlugins } from "./extensions/slots/registry";
 import { initThemes } from "./extensions/themes/registry";
 import { initTransports } from "./extensions/transports/registry";
-import commandsRouter from "./routes/commands";
-import extensionsRouter from "./routes/extensions";
-import pagesRouter from "./routes/pages";
-import pluginAssetsRouter from "./routes/plugin-assets";
-import pluginRoutesRouter from "./routes/plugin-routes";
-import proxyRouter from "./routes/proxy";
-import rateLimitRouter from "./routes/rate-limit";
-import searchRouter from "./routes/search";
-import searchBarRouter from "./routes/search-bar";
-import settingsAuthRouter from "./routes/settings-auth";
-import storeRouter from "./routes/store";
-import suggestRouter from "./routes/suggest";
-import swRouter from "./routes/sw";
-import themesRouter from "./routes/themes";
+import globalRouter from "./routes";
 import { setOutgoingAllowlist } from "./utils/outgoing";
 
 const app = new Hono();
@@ -42,20 +29,7 @@ app.use("/public/*.js", async (c, next) => {
   c.res.headers.set("Cache-Control", "no-cache");
 });
 app.use("/public/*", serveStatic({ root: "src/" }));
-app.route("/", pagesRouter);
-app.route("/", searchRouter);
-app.route("/", commandsRouter);
-app.route("/", suggestRouter);
-app.route("/", extensionsRouter);
-app.route("/", settingsAuthRouter);
-app.route("/", proxyRouter);
-app.route("/", rateLimitRouter);
-app.route("/", themesRouter);
-app.route("/", pluginAssetsRouter);
-app.route("/", storeRouter);
-app.route("/", swRouter);
-app.route("/", searchBarRouter);
-app.route("/", pluginRoutesRouter);
+app.route("/", globalRouter);
 
 const port = Number(process.env.DEGOOG_PORT) || 4444;
 
