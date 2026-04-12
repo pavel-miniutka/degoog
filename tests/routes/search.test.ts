@@ -3,10 +3,15 @@ import { describe, test, expect, beforeAll } from "bun:test";
 let searchRouter: {
   request: (req: Request | string) => Response | Promise<Response>;
 };
+let slotsRouter: {
+  request: (req: Request | string) => Response | Promise<Response>;
+};
 
 beforeAll(async () => {
   const mod = await import("../../src/server/routes/search");
   searchRouter = mod.default;
+  const slotsMod = await import("../../src/server/routes/slots");
+  slotsRouter = slotsMod.default;
 });
 
 describe("routes/search", () => {
@@ -25,7 +30,7 @@ describe("routes/search", () => {
       headers: { "Content-Type": "application/json" },
       body: "{}",
     });
-    const res = await searchRouter.request(req);
+    const res = await slotsRouter.request(req);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({ panels: [] });
@@ -42,7 +47,7 @@ describe("routes/search", () => {
       headers: { "Content-Type": "application/json" },
       body: "{}",
     });
-    const res = await searchRouter.request(req);
+    const res = await slotsRouter.request(req);
     expect(res.status).toBe(400);
   });
 
@@ -63,7 +68,7 @@ describe("routes/search", () => {
         ],
       }),
     });
-    const res = await searchRouter.request(req);
+    const res = await slotsRouter.request(req);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual(
