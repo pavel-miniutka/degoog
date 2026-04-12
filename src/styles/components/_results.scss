@@ -532,6 +532,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: $space-3;
+}
+
+#slot-above-sidebar {
+  margin-bottom: $space-4;
+}
+
+#slot-below-sidebar {
   margin-top: $space-4;
 }
 
