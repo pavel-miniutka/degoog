@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import commands from "./commands";
+import uovadipasqua from "./uovadipasqua";
 import extensions from "./extensions";
 import pages from "./pages";
 import pluginAssets from "./plugin-assets";
@@ -24,6 +25,7 @@ const globalRouter = new Hono();
 // e.g. globalRouter.route("/", commands); becomes globalRouter.route("/commands/", commands);
 // needs a full refactor of the client-side code to match the new API endpoints, but it would be more maintainable and scalable in the long run
 globalRouter.route("/", commands);
+globalRouter.route("/", uovadipasqua);
 globalRouter.route("/", extensions);
 globalRouter.route("/", pages);
 globalRouter.route("/", pluginAssets);

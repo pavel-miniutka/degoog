@@ -24,6 +24,7 @@ import {
   type SearchResponse,
 } from "../types";
 import { hideAcDropdown } from "./autocomplete";
+import { triggerSearchQueryEggs } from "./uovadipasqua";
 import { getEngines } from "./engines";
 import { setActiveTab } from "./navigation";
 import { buildPaginationHtml } from "./pagination";
@@ -56,7 +57,7 @@ const _fetchStreamingConfig = async (): Promise<boolean> => {
       _streamingConfig = (await res.json()) as { enabled: boolean };
       return _streamingConfig.enabled;
     }
-  } catch {}
+  } catch { }
   return false;
 };
 
@@ -81,7 +82,7 @@ const _fetchCommands = async (): Promise<Command[]> => {
       commandsCache = body.commands || [];
       return commandsCache;
     }
-  } catch {}
+  } catch { }
   return [];
 };
 
@@ -92,6 +93,8 @@ export async function performSearch(
 ): Promise<void> {
   const resolvedType = type || state.currentType || "web";
   if (!query.trim()) return;
+
+  void triggerSearchQueryEggs(query);
 
   const isInit = state.isInitialLoad;
   state.isInitialLoad = false;
@@ -231,12 +234,12 @@ export async function performSearch(
   try {
     const res = state.postMethodEnabled
       ? await fetch("/api/search", {
-          method: "POST",
-          body: JSON.stringify(
-            buildSearchBody(query, engines, resolvedType, resolvedPage),
-          ),
-          headers: { "Content-Type": "application/json" },
-        })
+        method: "POST",
+        body: JSON.stringify(
+          buildSearchBody(query, engines, resolvedType, resolvedPage),
+        ),
+        headers: { "Content-Type": "application/json" },
+      })
       : await fetch(url);
 
     const data = (await res.json()) as SearchResponse;
@@ -470,17 +473,17 @@ export async function goToPage(pageNum: number): Promise<void> {
   try {
     const res = state.postMethodEnabled
       ? await fetch("/api/search", {
-          method: "POST",
-          body: JSON.stringify(
-            buildSearchBody(
-              state.currentQuery,
-              engines,
-              state.currentType,
-              pageNum,
-            ),
+        method: "POST",
+        body: JSON.stringify(
+          buildSearchBody(
+            state.currentQuery,
+            engines,
+            state.currentType,
+            pageNum,
           ),
-          headers: { "Content-Type": "application/json" },
-        })
+        ),
+        headers: { "Content-Type": "application/json" },
+      })
       : await fetch(url);
 
     const data = (await res.json()) as SearchResponse;
@@ -542,22 +545,22 @@ export async function retryEngine(engineName: string): Promise<void> {
   try {
     const res = state.postMethodEnabled
       ? await fetch("/api/search/retry", {
-          method: "POST",
-          body: JSON.stringify({
-            query: state.currentQuery,
-            engine: engineName,
-            engines: Object.entries(engines)
-              .filter(([, v]) => v)
-              .map(([k]) => k),
-            type: state.currentType !== "web" ? state.currentType : undefined,
-            page: state.currentPage > 1 ? state.currentPage : undefined,
-            time:
-              state.currentTimeFilter !== "any"
-                ? state.currentTimeFilter
-                : undefined,
-          }),
-          headers: { "Content-Type": "application/json" },
-        })
+        method: "POST",
+        body: JSON.stringify({
+          query: state.currentQuery,
+          engine: engineName,
+          engines: Object.entries(engines)
+            .filter(([, v]) => v)
+            .map(([k]) => k),
+          type: state.currentType !== "web" ? state.currentType : undefined,
+          page: state.currentPage > 1 ? state.currentPage : undefined,
+          time:
+            state.currentTimeFilter !== "any"
+              ? state.currentTimeFilter
+              : undefined,
+        }),
+        headers: { "Content-Type": "application/json" },
+      })
       : await fetch(`/api/search/retry?${params.toString()}`);
     const data = (await res.json()) as SearchResponse & {
       results: ScoredResult[];
@@ -587,7 +590,7 @@ export async function retryEngine(engineName: string): Promise<void> {
     } else if (state.currentData) {
       renderSidebar(state.currentData, (q) => void performSearch(q));
     }
-  } catch {}
+  } catch { }
 }
 
 export async function performLucky(query: string): Promise<void> {

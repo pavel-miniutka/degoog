@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import pkg from "../../package.json";
 import { initPlugins } from "./extensions/commands/registry";
+import { initUovadipasquas } from "./extensions/uovadipasqua/registry";
 import {
   getOutgoingAllowlist,
   initEngines,
@@ -67,6 +68,7 @@ Promise.all([
   initPluginRoutes(),
   initMiddlewareRegistry(),
   initThemes(),
+  initUovadipasquas(),
 ]).then(() => {
   setOutgoingAllowlist(getOutgoingAllowlist());
   Bun.serve({ port, fetch: app.fetch, idleTimeout: 120 });
