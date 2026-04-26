@@ -109,12 +109,25 @@ export const createTranslator = (translations: TranslationRecord) => {
       // Split the keys and reduce translation object to find the value
       // If this isn't readable enough tell me, i'll use for loop c:
       const keys = key.split(".");
-      const value = keys.reduce<
-        TranslationVars | TranslationRecord | undefined
-      >((acc, k) => {
-        if (typeof acc === "object" && acc !== null && k in acc) return acc[k];
-        return undefined;
-      }, translations[closestLang]);
+      const _lookup = (lang: string) =>
+        keys.reduce<TranslationVars | TranslationRecord | undefined>(
+          (acc, k) => {
+            if (typeof acc === "object" && acc !== null && k in acc)
+              return acc[k];
+            return undefined;
+          },
+          translations[lang],
+        );
+
+      let value = _lookup(closestLang);
+
+      if (typeof value === "object" || typeof value === "undefined") {
+        const fallbackLang = getClosestLanguage(
+          "en",
+          localeList.filter((l) => l !== closestLang),
+        );
+        if (fallbackLang) value = _lookup(fallbackLang);
+      }
 
       if (typeof value === "object" || typeof value === "undefined") {
         logger.debug(
@@ -263,16 +276,27 @@ export const collectTranslationsForLocale = (
   for (const { namespace, translator } of entries) {
     if (!translator.translations) continue;
 
-    const lang = getClosestLanguage(
-      locale,
-      Object.keys(translator.translations),
-    );
+    const langs = Object.keys(translator.translations);
+    const lang = getClosestLanguage(locale, langs);
     if (!lang) continue;
 
-    const source = translator.translations[lang];
-    if (!source || typeof source !== "object") continue;
+    const fallbackLang = getClosestLanguage(
+      "en",
+      langs.filter((l) => l !== lang),
+    );
 
     if (!result[namespace]) result[namespace] = {};
+    if (fallbackLang) {
+      const fallbackSource = translator.translations[fallbackLang];
+      if (fallbackSource && typeof fallbackSource === "object") {
+        deepMerge(
+          result[namespace],
+          fallbackSource as Record<string, TranslationRecord>,
+        );
+      }
+    }
+    const source = translator.translations[lang];
+    if (!source || typeof source !== "object") continue;
     deepMerge(result[namespace], source as Record<string, TranslationRecord>);
   }
   return result;
