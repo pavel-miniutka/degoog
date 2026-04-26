@@ -1,0 +1,32 @@
+@keyframes egg-thanos-drift {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--egg-thanos-dx), var(--egg-thanos-dy))
+      rotate(var(--egg-thanos-rot));
+    opacity: 0;
+  }
+}
+
+.egg-thanos-rain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99998;
+}
+
+.egg-thanos-particle {
+  position: fixed;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  animation: egg-thanos-drift 2.5s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.egg-thanos-fading {
+  transition: opacity 2s ease-out;
+  opacity: 0 !important;
+}

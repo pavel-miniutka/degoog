@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import pkg from "../../package.json";
 import { initPlugins } from "./extensions/commands/registry";
+import { initUovadipasquas } from "./extensions/uovadipasqua/registry";
 import {
   getOutgoingAllowlist,
   initEngines,
@@ -33,17 +34,29 @@ app.route("/", globalRouter);
 
 const port = Number(process.env.DEGOOG_PORT) || 4444;
 
-console.log(`\x1b[0m ____
-/\\  _\`\\
-\\ \\ \\/\\ \\     __     __     ___     ___      __
- \\ \\ \\ \\ \\  /'__\`\\ /'_ \`\\  / __\`\\  / __\`\\  /'_ \`\\
-  \\ \\ \\_\\ \\/\\  __//\\ \\L\\ \\/\\ \\L\\ \\/\\ \\L\\ \\/\\ \\L\\ \\
-   \\ \\____/\\ \\____\\ \\____ \\ \\____/\\ \\____/\\ \\____ \\
-    \\/___/  \\/____/\\/___L\\ \\/___/  \\/___/  \\/___L\\ \\
-                     /\\____/                 /\\____/
-                     \\_/__/                  \\_/__/
-`);
-console.log("====================================================\n");
+const ANSI_BLUE = "\x1b[38;2;66;133;244m";
+const ANSI_RED = "\x1b[38;2;234;67;53m";
+const ANSI_YELLOW = "\x1b[38;2;251;188;5m";
+const ANSI_GREEN = "\x1b[38;2;52;168;83m";
+const ANSI_RESET = "\x1b[0m";
+const ANSI_GRAY = "\x1b[90m";
+
+console.log(
+  `
+   ${ANSI_BLUE}    ░██ ${ANSI_RESET} degoog ${ANSI_GRAY}${pkg.version}
+  ${ANSI_BLUE}     ░██ ${ANSI_RESET} Running on ${ANSI_GRAY}http://localhost:${port} ${ANSI_RESET}${"           ".repeat(5)}\n` +
+  `${ANSI_BLUE}       ░██ ${ANSI_RESET}${"           ".repeat(5)}\n` +
+  `${ANSI_BLUE} ░████████ ${ANSI_RED} ░███████  ${ANSI_YELLOW} ░████████ ${ANSI_BLUE} ░███████  ${ANSI_GREEN} ░███████  ${ANSI_RED} ░████████ ${ANSI_RESET}\n` +
+  `${ANSI_BLUE}░██    ░██ ${ANSI_RED}░██    ░██ ${ANSI_YELLOW}░██    ░██ ${ANSI_BLUE}░██    ░██ ${ANSI_GREEN}░██    ░██ ${ANSI_RED}░██    ░██ ${ANSI_RESET}\n` +
+  `${ANSI_BLUE}░██    ░██ ${ANSI_RED}░█████████ ${ANSI_YELLOW}░██    ░██ ${ANSI_BLUE}░██    ░██ ${ANSI_GREEN}░██    ░██ ${ANSI_RED}░██    ░██ ${ANSI_RESET}\n` +
+  `${ANSI_BLUE}░██    ░██ ${ANSI_RED}░██        ${ANSI_YELLOW}░██    ░██ ${ANSI_BLUE}░██    ░██ ${ANSI_GREEN}░██    ░██ ${ANSI_RED}░██    ░██ ${ANSI_RESET}\n` +
+  `${ANSI_BLUE} ░████████ ${ANSI_RED} ░███████  ${ANSI_YELLOW} ░████████ ${ANSI_BLUE} ░███████  ${ANSI_GREEN} ░███████  ${ANSI_RED} ░████████ ${ANSI_RESET}\n` +
+  `${"           ".repeat(2)}${ANSI_YELLOW}       ░██ ${ANSI_RESET}${"           ".repeat(2)}${ANSI_RED}       ░██ ${ANSI_RESET}\n` +
+  `${"           ".repeat(2)}${ANSI_YELLOW} ░███████  ${ANSI_RESET}${"           ".repeat(2)}${ANSI_RED} ░███████  ${ANSI_RESET}
+
+${ANSI_GRAY}█████████████████████████████████████████████████████████████████${ANSI_RESET}
+ `,
+);
 
 Promise.all([
   initTransports(),
@@ -55,10 +68,8 @@ Promise.all([
   initPluginRoutes(),
   initMiddlewareRegistry(),
   initThemes(),
+  initUovadipasquas(),
 ]).then(() => {
   setOutgoingAllowlist(getOutgoingAllowlist());
   Bun.serve({ port, fetch: app.fetch, idleTimeout: 120 });
-
-  console.log(`\x1b[90mdegoog v${pkg.version}\x1b[0m`);
-  console.log(`Running on http://localhost:${port}`);
 });

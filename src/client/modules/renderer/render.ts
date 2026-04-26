@@ -77,6 +77,7 @@ export function renderResults(results: ScoredResult[]): void {
     .join("");
 
   renderPagination(MAX_PAGE, state.currentPage);
+  window.dispatchEvent(new CustomEvent("degoog-results-ready"));
 }
 
 export function renderPagination(totalPages: number, activePage: number): void {

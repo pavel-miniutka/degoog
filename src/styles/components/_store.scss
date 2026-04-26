@@ -138,7 +138,6 @@
   border: 0;
   border-radius: $radius-md;
   color: var(--text-primary);
-  font-family: $font-family;
   font-size: $font-size-base;
   padding: $space-2 $space-3;
   outline: none;
@@ -177,6 +176,86 @@
   margin-bottom: $space-3;
 }
 
+.store-updates-panel {
+  background: var(--bg-light);
+  border-radius: $radius-lg;
+  margin-bottom: $space-4;
+  overflow: hidden;
+}
+
+.store-updates-header {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-2 $space-3 $space-2 0;
+}
+
+.store-updates-toggle {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+  flex: 1;
+  min-width: 0;
+  padding: $space-3 $space-4;
+  font-size: $font-size-base;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+
+  .accordion-chevron {
+    transition: transform $transition-fast;
+    flex-shrink: 0;
+  }
+}
+
+.store-updates-body {
+  display: none;
+  padding: 0 $space-4 $space-4;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.store-updates-panel.open .store-updates-body {
+  display: flex;
+}
+
+.store-updates-panel.open .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.store-updates-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+  padding: $space-2 $space-3;
+  background: var(--bg-hover);
+  border-radius: $radius-md;
+}
+
+.store-updates-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.store-updates-row-name {
+  font-size: $font-size-base;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-updates-row-meta {
+  font-size: $font-size-small;
+  color: var(--text-secondary);
+}
+
 .store-filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -193,7 +272,6 @@
   border: 0;
   border-radius: $search-bar-radius;
   color: var(--text-primary);
-  font-family: $font-family;
   font-size: $font-size-base;
   padding: $space-3;
   outline: none;
@@ -215,7 +293,6 @@
   border: 1px solid var(--border);
   border-radius: $radius-lg;
   color: var(--text-primary);
-  font-family: $font-family;
   font-size: $font-size-small;
   padding: $space-2 $space-7 $space-2 $space-3;
   cursor: pointer;

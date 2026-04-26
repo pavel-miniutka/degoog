@@ -16,6 +16,9 @@ await esbuild.build({
   target: ["es2022"],
   minify: false,
   sourcemap: false,
+  define: {
+    "process.env.LOG_LEVEL": JSON.stringify(process.env.LOG_LEVEL ?? "info"),
+  },
 });
 
 console.log("TypeScript bundled successfully.");

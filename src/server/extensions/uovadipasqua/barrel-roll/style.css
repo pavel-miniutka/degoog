@@ -1,0 +1,17 @@
+@keyframes egg-barrel-roll-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+html.egg-barrel-roll-active {
+  overflow: hidden;
+}
+
+html.egg-barrel-roll-active body {
+  animation: egg-barrel-roll-spin 4s ease-in-out 1;
+  transform-origin: 50% 50%;
+}

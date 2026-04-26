@@ -2,6 +2,7 @@ import {
   skeletonGlance,
   skeletonImageGrid,
   skeletonResults,
+  skeletonSidebar,
   skeletonVideoGrid,
 } from "../animations/skeleton";
 import { BUILTIN_SEARCH_TYPES, MAX_PAGE } from "../constants";
@@ -23,6 +24,7 @@ import {
   type SearchResponse,
 } from "../types";
 import { hideAcDropdown } from "./autocomplete";
+import { triggerSearchQueryEggs } from "./uovadipasqua";
 import { getEngines } from "./engines";
 import { setActiveTab } from "./navigation";
 import { buildPaginationHtml } from "./pagination";
@@ -31,8 +33,9 @@ import {
   runScriptsInContainer,
   setResultsMeta,
 } from "./search-helpers";
-import { navigateToSearch } from "./search-navigation";
 import {
+  abortGlancePanels,
+  abortSlotPanels,
   buildCommandGlanceHtml,
   fetchGlancePanels,
   fetchSlotPanels,
@@ -54,7 +57,7 @@ const _fetchStreamingConfig = async (): Promise<boolean> => {
       _streamingConfig = (await res.json()) as { enabled: boolean };
       return _streamingConfig.enabled;
     }
-  } catch {}
+  } catch { }
   return false;
 };
 
@@ -79,7 +82,7 @@ const _fetchCommands = async (): Promise<Command[]> => {
       commandsCache = body.commands || [];
       return commandsCache;
     }
-  } catch {}
+  } catch { }
   return [];
 };
 
@@ -87,18 +90,14 @@ export async function performSearch(
   query: string,
   type?: string,
   page?: number,
-  options?: { forceAjax?: boolean },
 ): Promise<void> {
   const resolvedType = type || state.currentType || "web";
   if (!query.trim()) return;
 
+  void triggerSearchQueryEggs(query);
+
   const isInit = state.isInitialLoad;
   state.isInitialLoad = false;
-
-  if (!isInit && !options?.forceAjax && !state.postMethodEnabled) {
-    navigateToSearch(query, resolvedType, page);
-    return;
-  }
 
   if (resolvedType.startsWith("tab:")) {
     const { performTabSearch } = await import("../modules/tabs/tab-search");
@@ -127,7 +126,13 @@ export async function performSearch(
     return _performBangCommand(query, resolvedType, page || 1);
   }
 
+  const commands = await _fetchCommands();
+  const naturalBangQuery = commands.length
+    ? getNaturalLanguageBangQuery(query, commands)
+    : null;
+
   if (
+    !naturalBangQuery &&
     !state.postMethodEnabled &&
     (!page || page === 1) &&
     (await _fetchStreamingConfig())
@@ -171,6 +176,11 @@ export async function performSearch(
   }
   const resultsMeta = document.getElementById("results-meta");
   if (resultsMeta) resultsMeta.textContent = "Searching...";
+  clearSlotPanels();
+  if (resolvedType === "images" || resolvedType === "videos") {
+    abortGlancePanels();
+    abortSlotPanels();
+  }
   const glanceEl = document.getElementById("at-a-glance");
   if (glanceEl)
     glanceEl.innerHTML = resolvedType === "web" ? skeletonGlance() : "";
@@ -189,17 +199,17 @@ export async function performSearch(
   const pagination = document.getElementById("pagination");
   if (pagination) pagination.innerHTML = "";
   const sidebar = document.getElementById("results-sidebar");
-  if (sidebar) sidebar.innerHTML = "";
-  clearSlotPanels();
+  const isMediaType = resolvedType === "images" || resolvedType === "videos";
+  if (sidebar) sidebar.innerHTML = isMediaType ? "" : skeletonSidebar();
   document.title = `${query} - degoog`;
 
+  const historyState = {
+    degoog: true,
+    query,
+    type: resolvedType,
+    page: resolvedPage,
+  };
   if (state.postMethodEnabled) {
-    const historyState = {
-      degoog: true,
-      query,
-      type: resolvedType,
-      page: resolvedPage,
-    };
     if (isInit) {
       history.replaceState(historyState, "", "/search");
     } else {
@@ -209,27 +219,27 @@ export async function performSearch(
     const urlParams = new URLSearchParams({ q: query });
     if (resolvedType !== "web") urlParams.set("type", resolvedType);
     if (resolvedPage > 1) urlParams.set("page", String(resolvedPage));
-    history.replaceState(null, "", `/search?${urlParams.toString()}`);
+    const getUrl = `/search?${urlParams.toString()}`;
+    if (isInit) {
+      history.replaceState(historyState, "", getUrl);
+    } else {
+      history.pushState(historyState, "", getUrl);
+    }
   }
 
-  const commands = await _fetchCommands();
-  const bangQuery = commands.length
-    ? getNaturalLanguageBangQuery(query, commands)
-    : null;
-
-  if (bangQuery) {
-    return _performSearchWithBang(bangQuery, url, query, resolvedType);
+  if (naturalBangQuery) {
+    return _performSearchWithBang(naturalBangQuery, url, query, resolvedType);
   }
 
   try {
     const res = state.postMethodEnabled
       ? await fetch("/api/search", {
-          method: "POST",
-          body: JSON.stringify(
-            buildSearchBody(query, engines, resolvedType, resolvedPage),
-          ),
-          headers: { "Content-Type": "application/json" },
-        })
+        method: "POST",
+        body: JSON.stringify(
+          buildSearchBody(query, engines, resolvedType, resolvedPage),
+        ),
+        headers: { "Content-Type": "application/json" },
+      })
       : await fetch(url);
 
     const data = (await res.json()) as SearchResponse;
@@ -239,28 +249,25 @@ export async function performSearch(
     const metaText = `About ${data.results.length} results (${(data.totalTime / 1000).toFixed(2)} seconds)`;
     setResultsMeta(metaText);
 
-    const isMediaType = resolvedType === "images" || resolvedType === "videos";
     if (isMediaType) {
       if (glanceEl) glanceEl.innerHTML = "";
       renderMediaEngineBar(data.engineTimings ?? []);
       if (sidebar) sidebar.innerHTML = "";
+    } else if (resolvedType === "web") {
+      void fetchGlancePanels(query, data.results);
+      void fetchSlotPanels(query, data.results).then((panels) => {
+        const kpPanels = panels.filter(
+          (p) => p.position === SlotPanelPosition.KnowledgePanel,
+        );
+        renderSidebar(
+          data,
+          (q) => void performSearch(q),
+          kpPanels.length > 0 ? { sidebarTopPanels: kpPanels } : undefined,
+        );
+      });
     } else {
       renderSidebar(data, (q) => void performSearch(q));
-      if (resolvedType === "web") {
-        void fetchGlancePanels(query, data.results);
-        void fetchSlotPanels(query, data.results).then((panels) => {
-          const kpPanels = panels.filter(
-            (p) => p.position === SlotPanelPosition.KnowledgePanel,
-          );
-          if (kpPanels.length > 0) {
-            renderSidebar(data, (q) => void performSearch(q), {
-              sidebarTopPanels: kpPanels,
-            });
-          }
-        });
-      } else {
-        if (glanceEl) glanceEl.innerHTML = "";
-      }
+      if (glanceEl) glanceEl.innerHTML = "";
     }
     renderResults(data.results);
   } catch {
@@ -296,22 +303,20 @@ async function _performSearchWithBang(
       if (glanceEl) glanceEl.innerHTML = "";
       renderMediaEngineBar(searchData.engineTimings ?? []);
       if (sidebar) sidebar.innerHTML = "";
+    } else if (type === "web") {
+      void fetchSlotPanels(query, searchData.results).then((panels) => {
+        const kpPanels = panels.filter(
+          (p) => p.position === SlotPanelPosition.KnowledgePanel,
+        );
+        renderSidebar(
+          searchData,
+          (q) => void performSearch(q),
+          kpPanels.length > 0 ? { sidebarTopPanels: kpPanels } : undefined,
+        );
+      });
     } else {
       renderSidebar(searchData, (q) => void performSearch(q));
-      if (type === "web") {
-        void fetchSlotPanels(query, searchData.results).then((panels) => {
-          const kpPanels = panels.filter(
-            (p) => p.position === SlotPanelPosition.KnowledgePanel,
-          );
-          if (kpPanels.length > 0) {
-            renderSidebar(searchData, (q) => void performSearch(q), {
-              sidebarTopPanels: kpPanels,
-            });
-          }
-        });
-      } else {
-        if (glanceEl) glanceEl.innerHTML = "";
-      }
+      if (glanceEl) glanceEl.innerHTML = "";
     }
     renderResults(searchData.results);
 
@@ -444,11 +449,6 @@ function _renderBangPagination(
 export async function goToPage(pageNum: number): Promise<void> {
   if (pageNum === state.currentPage) return;
 
-  if (!state.postMethodEnabled) {
-    navigateToSearch(state.currentQuery, state.currentType, pageNum);
-    return;
-  }
-
   const resultsList = document.getElementById("results-list");
   const pagination = document.getElementById("pagination");
   if (resultsList) {
@@ -473,33 +473,37 @@ export async function goToPage(pageNum: number): Promise<void> {
   try {
     const res = state.postMethodEnabled
       ? await fetch("/api/search", {
-          method: "POST",
-          body: JSON.stringify(
-            buildSearchBody(
-              state.currentQuery,
-              engines,
-              state.currentType,
-              pageNum,
-            ),
+        method: "POST",
+        body: JSON.stringify(
+          buildSearchBody(
+            state.currentQuery,
+            engines,
+            state.currentType,
+            pageNum,
           ),
-          headers: { "Content-Type": "application/json" },
-        })
+        ),
+        headers: { "Content-Type": "application/json" },
+      })
       : await fetch(url);
 
     const data = (await res.json()) as SearchResponse;
     state.currentResults = data.results;
     state.currentData = data;
     state.currentPage = pageNum;
-    history.pushState(
-      {
-        degoog: true,
-        query: state.currentQuery,
-        type: state.currentType,
-        page: pageNum,
-      },
-      "",
-      "/search",
-    );
+    const pageHistoryState = {
+      degoog: true,
+      query: state.currentQuery,
+      type: state.currentType,
+      page: pageNum,
+    };
+    if (state.postMethodEnabled) {
+      history.pushState(pageHistoryState, "", "/search");
+    } else {
+      const urlParams = new URLSearchParams({ q: state.currentQuery });
+      if (state.currentType !== "web") urlParams.set("type", state.currentType);
+      if (pageNum > 1) urlParams.set("page", String(pageNum));
+      history.pushState(pageHistoryState, "", `/search?${urlParams.toString()}`);
+    }
     const metaText = `About ${state.currentResults.length} results — Page ${state.currentPage}`;
     setResultsMeta(metaText);
     if (state.currentPage === 1 && state.currentType === "web") {
@@ -541,22 +545,22 @@ export async function retryEngine(engineName: string): Promise<void> {
   try {
     const res = state.postMethodEnabled
       ? await fetch("/api/search/retry", {
-          method: "POST",
-          body: JSON.stringify({
-            query: state.currentQuery,
-            engine: engineName,
-            engines: Object.entries(engines)
-              .filter(([, v]) => v)
-              .map(([k]) => k),
-            type: state.currentType !== "web" ? state.currentType : undefined,
-            page: state.currentPage > 1 ? state.currentPage : undefined,
-            time:
-              state.currentTimeFilter !== "any"
-                ? state.currentTimeFilter
-                : undefined,
-          }),
-          headers: { "Content-Type": "application/json" },
-        })
+        method: "POST",
+        body: JSON.stringify({
+          query: state.currentQuery,
+          engine: engineName,
+          engines: Object.entries(engines)
+            .filter(([, v]) => v)
+            .map(([k]) => k),
+          type: state.currentType !== "web" ? state.currentType : undefined,
+          page: state.currentPage > 1 ? state.currentPage : undefined,
+          time:
+            state.currentTimeFilter !== "any"
+              ? state.currentTimeFilter
+              : undefined,
+        }),
+        headers: { "Content-Type": "application/json" },
+      })
       : await fetch(`/api/search/retry?${params.toString()}`);
     const data = (await res.json()) as SearchResponse & {
       results: ScoredResult[];
@@ -586,7 +590,7 @@ export async function retryEngine(engineName: string): Promise<void> {
     } else if (state.currentData) {
       renderSidebar(state.currentData, (q) => void performSearch(q));
     }
-  } catch {}
+  } catch { }
 }
 
 export async function performLucky(query: string): Promise<void> {

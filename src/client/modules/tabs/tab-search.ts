@@ -1,4 +1,4 @@
-import { skeletonResults } from "../../animations/skeleton";
+import { skeletonResults, skeletonSidebar } from "../../animations/skeleton";
 import { state } from "../../state";
 import {
   SlotPanelPosition,
@@ -8,7 +8,6 @@ import {
 import { hideAcDropdown } from "../../utils/autocomplete";
 import { setActiveTab } from "../../utils/navigation";
 import { buildPaginationHtml } from "../../utils/pagination";
-import { navigateToSearch } from "../../utils/search-navigation";
 import { fetchSlotPanels } from "../../utils/search-utils";
 import {
   abortStreamingSearch,
@@ -52,11 +51,6 @@ export async function performTabSearch(
   const isInit = state.isInitialLoad;
   state.isInitialLoad = false;
 
-  if (!isInit && !state.postMethodEnabled) {
-    navigateToSearch(query, `tab:${tabId}`, page);
-    return;
-  }
-
   if (
     tabId.startsWith("engine:") &&
     page === 1 &&
@@ -92,7 +86,7 @@ export async function performTabSearch(
   const pagination = document.getElementById("pagination");
   if (pagination) pagination.innerHTML = "";
   const sidebar = document.getElementById("results-sidebar");
-  if (sidebar) sidebar.innerHTML = "";
+  if (sidebar) sidebar.innerHTML = skeletonSidebar();
   const glanceEl = document.getElementById("at-a-glance");
   if (glanceEl) glanceEl.innerHTML = "";
   clearSlotPanels();
@@ -103,15 +97,20 @@ export async function performTabSearch(
 
   const urlParams = new URLSearchParams({ q: query, type: `tab:${tabId}` });
   if (page > 1) urlParams.set("page", String(page));
+  const tabHistoryState = { degoog: true, query, type: `tab:${tabId}`, page };
   if (state.postMethodEnabled) {
-    const historyState = { degoog: true, query, type: `tab:${tabId}`, page };
     if (isInit) {
-      history.replaceState(historyState, "", "/search");
+      history.replaceState(tabHistoryState, "", "/search");
     } else {
-      history.pushState(historyState, "", "/search");
+      history.pushState(tabHistoryState, "", "/search");
     }
   } else {
-    history.replaceState(null, "", `/search?${urlParams.toString()}`);
+    const getUrl = `/search?${urlParams.toString()}`;
+    if (isInit) {
+      history.replaceState(tabHistoryState, "", getUrl);
+    } else {
+      history.pushState(tabHistoryState, "", getUrl);
+    }
   }
 
   try {
@@ -146,8 +145,6 @@ export async function performTabSearch(
       engineTimings: timings,
       relatedSearches: [],
     } satisfies SearchResponse;
-    renderSidebar(state.currentData, (q) => void performTabSearch(q, tabId));
-
     _renderTabResults(data.results || [], resultsList);
 
     if (data.totalPages && data.totalPages > 1 && pagination) {
@@ -155,11 +152,14 @@ export async function performTabSearch(
     }
 
     const panels = await fetchSlotPanels(query, data.results);
-    renderSidebar(state.currentData, (q) => void performTabSearch(q, tabId), {
-      sidebarTopPanels: panels.filter(
-        (p) => p.position === SlotPanelPosition.KnowledgePanel,
-      ),
-    });
+    const kpPanels = panels.filter(
+      (p) => p.position === SlotPanelPosition.KnowledgePanel,
+    );
+    renderSidebar(
+      state.currentData,
+      (q) => void performTabSearch(q, tabId),
+      kpPanels.length > 0 ? { sidebarTopPanels: kpPanels } : undefined,
+    );
   } catch {
     if (resultsMeta) resultsMeta.textContent = "";
     if (resultsList)

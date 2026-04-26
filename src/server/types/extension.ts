@@ -26,7 +26,7 @@ export const TranslateFunction: Translate = Object.assign(
     return key;
   },
   {
-    setLocale(_locale: string) {},
+    setLocale(_locale: string) { },
     locale: "",
     translations: undefined as TranslationRecord | undefined,
   },
@@ -43,13 +43,13 @@ export interface SettingField {
   key: string;
   label: string;
   type:
-    | "text"
-    | "number"
-    | "password"
-    | "url"
-    | "toggle"
-    | "textarea"
-    | "select";
+  | "text"
+  | "number"
+  | "password"
+  | "url"
+  | "toggle"
+  | "textarea"
+  | "select";
   required?: boolean;
   placeholder?: string;
   description?: string;
@@ -187,6 +187,10 @@ export interface MiddlewareResult {
 export interface RequestMiddleware {
   id: string;
   name: string;
+  settingsId?: string;
+  settingsSchema?: SettingField[];
+  configure?(settings: Record<string, string | string[]>): void;
+  init?(context: PluginContext): void | Promise<void>;
   handle(
     req: Request,
     context?: { route?: string },
@@ -246,4 +250,23 @@ export interface Transport {
     options: TransportFetchOptions,
     context: TransportContext,
   ): Promise<Response>;
+}
+
+export interface UovadipasquaSearchQueryTrigger {
+  type: "search-query";
+  pattern: string;
+  chance?: number;
+}
+
+export type UovadipasquaTrigger = UovadipasquaSearchQueryTrigger;
+export interface Uovadipasqua {
+  id: string;
+  triggers: UovadipasquaTrigger[];
+  waitForResults?: boolean;
+}
+export interface UovadipasquaMatch {
+  id: string;
+  scriptUrl: string;
+  styleUrl: string | null;
+  waitForResults: boolean;
 }

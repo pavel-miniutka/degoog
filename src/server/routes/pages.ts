@@ -27,7 +27,7 @@ import {
   getPluginScriptFolders,
   getPluginSettingsIds,
 } from "../utils/plugin-assets";
-import { isDisabled } from "../utils/plugin-settings";
+import { asString, getSettings, isDisabled } from "../utils/plugin-settings";
 import { isPublicInstance } from "../utils/public-instance";
 import {
   collectTranslationsForLocale,
@@ -97,6 +97,14 @@ async function getTranslator(
   return t;
 }
 
+function getTextDirection(
+  locale: string
+): "rtl" | "ltr" {
+  const RTL_LANGS = ["ar", "he", "fa", "ur", "ps", "ckb"];
+  const isRTL = RTL_LANGS.some(lang => locale.toLowerCase().startsWith(lang));
+  return isRTL ? "rtl" : "ltr";
+}
+
 const router = new Hono();
 
 function buildOpenSearchXml(origin: string): string {
@@ -116,6 +124,16 @@ function themeCssPlaceholder(): string {
   if (!theme?.manifest.css) return "";
   return `<link rel="stylesheet" href="/theme/style.css?v=${pkg.version}">`;
 }
+
+const _DEGOOG_SETTINGS_ID = "degoog-settings";
+
+const customCssPlaceholder = async (): Promise<string> => {
+  const settings = await getSettings(_DEGOOG_SETTINGS_ID);
+  const css = asString(settings.customCss).trim();
+  if (!css) return "";
+  const safe = css.replace(/<\//g, "<\\/");
+  return `<style id="degoog-custom-css">${safe}</style>`;
+};
 
 async function pluginAssetsPlaceholder(): Promise<string> {
   const v = pkg.version;
@@ -179,7 +197,9 @@ async function applyPagePlaceholders(
   let result = html
     .replace("__THEME_CSS__", themeCssPlaceholder())
     .replace("__THEME_ATTRS__", themeAttrs)
-    .replace("__PLUGIN_ASSETS__", await pluginAssetsPlaceholder());
+    .replace("__PLUGIN_ASSETS__", await pluginAssetsPlaceholder())
+    .replace("__CUSTOM_CSS__", await customCssPlaceholder())
+    .replace("__RTL_SUPPORT__", `dir=${getTextDirection(locale)}`);
   const defaultTemplates = await getDefaultTemplatesHtml();
   const themeTemplates = await getThemeTemplatesHtml();
   const allTemplates = [defaultTemplates, themeTemplates]
